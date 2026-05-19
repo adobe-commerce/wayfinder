@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:experienceleague.adobe.com)",
+      "WebFetch(domain:www.aem.live)"
+    ]
+  }
+}

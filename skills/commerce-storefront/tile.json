@@ -1,0 +1,11 @@
+{
+  "name": "local/commerce-storefront",
+  "version": "0.1.0",
+  "private": true,
+  "summary": "Helps software engineers build, configure, and troubleshoot Adobe Commerce EDS storefronts — covering setup, drop-ins, blocks, GraphQL customization, prerender, recommendations, and runtime debugging.",
+  "skills": {
+    "commerce-storefront": {
+      "path": "SKILL.md"
+    }
+  }
+}

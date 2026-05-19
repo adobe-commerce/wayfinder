@@ -1,0 +1,11 @@
+{
+  "name": "local/commerce-backend",
+  "version": "0.1.0",
+  "private": true,
+  "summary": "Helps software engineers set up, configure, and troubleshoot Adobe Commerce backend environments — covering ACCS, ACO, PaaS, B2B, catalog service, data export, and admin configuration.",
+  "skills": {
+    "commerce-backend": {
+      "path": "SKILL.md"
+    }
+  }
+}
