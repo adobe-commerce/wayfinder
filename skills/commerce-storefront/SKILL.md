@@ -2,17 +2,15 @@
 name: commerce-storefront
 description: >
   Helps software engineers build, configure, and troubleshoot Adobe Commerce EDS storefronts.
-  Use this skill for any question about: setting up an EDS storefront (boilerplate, Code Sync,
-  fstab.yaml, AEM Code Sync GitHub App, npm install, local dev); Storefront Configuration
-  (publicConfig, AEM Admin API, config keys, headers, CORS); Commerce drop-ins (storefront-pdp,
-  storefront-cart, storefront-checkout, storefront-auth, storefront-account, storefront-order,
-  storefront-recommendations — installation, customization, containers, slots, event bus,
-  initializers); EDS blocks (writing block JS/CSS, block patterns, readBlockConfig); GraphQL
-  customization (overrideGQLOperations, secondary queries, CS_FETCH_GRAPHQL, CORE_FETCH_GRAPHQL);
-  product recommendations (recommendation units, analytics config, layout); aem-commerce-prerender;
-  troubleshooting runtime issues ($0.00 prices, 418 errors, search returning no results,
-  drop-ins not loading, CDN sync, CORS errors); or understanding the storefront architecture
-  (two-endpoint pattern, import maps, scripts/__dropins__/, commerce.js, EDS page lifecycle).
+  Use for questions about: EDS storefront setup (boilerplate, Code Sync, fstab.yaml, npm
+  install, local dev); Storefront Configuration (AEM Admin API, config keys, headers, CORS);
+  Commerce drop-ins (storefront-pdp, storefront-cart, storefront-checkout, storefront-auth,
+  storefront-account, storefront-order, storefront-recommendations — installation,
+  customization, containers, slots, event bus, initializers); EDS blocks (JS/CSS,
+  readBlockConfig); GraphQL customization (overrideGQLOperations, CS_FETCH_GRAPHQL,
+  CORE_FETCH_GRAPHQL); product recommendations; aem-commerce-prerender; troubleshooting
+  ($0.00 prices, 418 errors, no search results, drop-ins not loading, CDN sync, CORS errors);
+  storefront architecture (two-endpoint pattern, import maps, scripts/__dropins__/, commerce.js).
 ---
 
 # Commerce Storefront Skill
