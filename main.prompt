@@ -1,23 +1,144 @@
-// This is the prompt used to start this entire project.
+// Design document for the Adobe Commerce DX Skills project.
+// This file is the source of intent. All skills trace back to it.
 
-The goal of this project is to create a set of Claude skills which can be used to assist a software engineer working on Adobe Commerce projects, in a variety of ways. The skills should be designed to be context-friendly, and to be able to handle a variety of different scenarios, use cases, and questions. Ultimately, we aim for a user to be able to open their developer agent of choice (Claude, Codex, Cursor, etc) either in a GUI (e.g. Claude Desktop), an IDE (e.g. Cursor), or a CLI (e.g. Claude CLI) and have it assist them with their Adobe Commerce projects at any point. The source of truth for knowledge is always official Adobe Commerce documentation, which can be found at either:
+---
 
-- https://experienceleague.adobe.com/en/docs/commerce (landing page for all Commerce docs "on experience league")
-- storefront docs: https://experienceleague.adobe.com/developer/commerce/storefront/llms.txt (landing page for all Storefront docs. These are from a microsite on experience league)
-- aem.live: https://www.aem.live/llms.txt (landing page for all EDS docs. These are from a microsite on aem.live)
+## Goal
 
-Some example use cases for the skills:
+Create a set of Claude skills that help an external software engineer work on Adobe Commerce
+projects — answering any question they have, guiding them to solutions, and surfacing the
+right documentation at the right time.
 
-- creating and configuring an ACCS (Adobe Commerce Cloud Service) or ACO (Adobe Commerce Optimizer) backend environment.
-- creating and configuring an Adobe commerce on EDS storefront, using the hlxsites/aem-boilerplate-commerce code repository.
-- adding/customizing "content pages" to the EDS site
-- adding/customizing "blocks" on a content page
-- adding/customzing block code in the EDS code repo
-- using/extending a dropin in the EDS code repo, such as a vanilla implementation or a custom case, such as overriding graphql fragments, using slots, etc.
-- Implenting and customizing aem-commerce-prerender for the EDS site
-- Creating a new "product recommendation unit" and then having that appear on the site, using product-recommendations dropin.
-- Troubleshooting and debugging issues with the site, such as debugging why a product is not appearing on the site, or why there are no search results, or why a certain error is appearing, etc.
-- Troubleshooting and debugging access issues such as for content authoring, and content publication, in EDS.
-- knowing how to access various UIs and dashboards, such as a view for content authoring, a view of ACO admin, a view of ACCS or PaaS admin, etc, using things like EDS org and site, ACCS tenant id, etc.
+"External" means the skills must only ever reference public information. Internal Adobe tools,
+Slack channels, or internal-only URLs must NEVER be recommended.
 
-Before we start, help me "prompt engineer" this prompt.
+---
+
+## Target user
+
+A software engineer (partner, ISV, or customer) building on Adobe Commerce. They may be:
+
+- Setting up or configuring a new environment (backend, storefront, or both)
+- Developing features (blocks, dropins, App Builder apps, backend customizations)
+- Debugging and troubleshooting runtime or configuration problems
+- Authoring or managing content in Document Authoring (DA)
+- Trying to understand how the system fits together
+
+They are not necessarily Adobe employees and should never be directed to internal resources.
+
+---
+
+## Primary environment
+
+**Claude Code** (CLI). In this environment the agent has direct filesystem access and can
+read the user's project files.
+
+The skills must also degrade gracefully in other environments (Claude Desktop, claude.ai,
+Cursor, ChatGPT, etc.) where filesystem access may not be available. In those cases, the
+agent asks the user to share relevant files, config, or error output.
+
+---
+
+## The user's codebase (may be multiple repos)
+
+When filesystem access is available, the agent should identify and read the relevant
+repository for the question being asked. There may be more than one:
+
+- **Storefront repo** — an EDS site with Commerce integrations. May be built on a starter kit (such as `hlxsites/aem-boilerplate-commerce` or `adobe-rnd/aem-boilerplate-xcom`) or built custom. Read the actual repo before assuming any structure.
+- **App Builder app** — e.g. `aem-commerce-prerender`, or other Adobe I/O Runtime applications
+- **Backend repo** — a PaaS Adobe Commerce (Magento) PHP codebase, for merchants who run one
+
+The current state of the user's code is a source of truth for their specific situation and
+takes precedence over general documentation when they conflict.
+
+---
+
+## Source domains and authority
+
+Official public documentation is the source of truth for all knowledge. Four primary sources,
+each authoritative for its domain:
+
+| Source | Entry point | llms.txt | Authoritative for |
+|---|---|---|---|
+| ExL Storefront | `https://experienceleague.adobe.com/developer/commerce/storefront/llms.txt` | Yes | EDS storefront, dropins, blocks, boilerplate, recommendations, prerender, Storefront Configuration |
+| aem.live | `https://www.aem.live/llms.txt` | Yes | EDS platform (Code Sync, Admin API, CDN, fstab), Document Authoring platform |
+| ExL Commerce | `https://experienceleague.adobe.com/en/docs/commerce` | No | Adobe Commerce backend — ACCS, ACO, PaaS, B2B, catalog, data export, admin |
+| docs.da.live | `https://da.live/docs` | No | Document Authoring — content workflow, authoring, publishing, permissions |
+
+### Fetch strategy per source
+
+- **ExL Storefront / aem.live** — fetch the `llms.txt` first; it is an index of available
+  section files. Fetch the relevant section(s) for the question.
+- **ExL Commerce** — no `llms.txt`. Fetch the hub page to get section links, then fetch the
+  relevant section pages. The hub returns navigable content. The ExL search page is
+  JavaScript-rendered and not useful for WebFetch.
+- **docs.da.live** — no llms.txt; both `da.live/docs` and `docs.da.live` are navigation hubs
+  with limited content. The substantive DA documentation lives on aem.live — use the aem.live
+  llms.txt to find DA-specific sections, and supplement with `da.live/docs` for navigation links.
+
+### Conflict resolution
+
+When sources conflict, the domain owner wins:
+- EDS platform (Code Sync, fstab, Admin API, CDN) → **aem.live**
+- Document Authoring features and workflow → **docs.da.live**
+- Storefront dropins, blocks, Storefront Configuration → **ExL Storefront**
+- Commerce backend, B2B, catalog, ACO/ACCS admin → **ExL Commerce**
+
+---
+
+## Skill structure
+
+Three skills, one per source cluster:
+
+| Skill | Covers | Sources |
+|---|---|---|
+| `commerce-storefront` | EDS storefront setup and development — boilerplate, AEM Code Sync, Storefront Configuration, CORS, dropins (all), blocks (code), API customization, prerender, recommendations, runtime troubleshooting | ExL Storefront + aem.live |
+| `commerce-backend` | Adobe Commerce backend — ACCS, ACO, PaaS setup, B2C, B2B, catalog views, price books, data export, admin dashboards, backend troubleshooting, graphql API | ExL Commerce |
+| `commerce-da` | Document Authoring — content pages, blocks (authoring side), navigation, publishing, access, permissions, DA troubleshooting | docs.da.live + aem.live |
+
+Skills are not feature-specific. A single skill covers the full range of questions in its
+domain by navigating the docs intelligently rather than inlining knowledge.
+
+---
+
+## Required behaviors (all skills)
+
+1. **Fetch before answering.** Use the source URLs above to retrieve current documentation
+   rather than relying on static knowledge. Static knowledge in the skill file is supplementary.
+
+2. **Read the repo when available.** If filesystem access exists, read the relevant project
+   files before answering. The user's code reflects their actual current state.
+
+3. **Ask when access is unavailable.** If filesystem access is not available, ask the user
+   to share the relevant code, config, error output, or file.
+
+4. **Apply source authority.** When sources conflict, use the domain ownership rules above.
+   State which source you're trusting and why if it matters to the answer.
+
+5. **Stay current.** Prefer fetched documentation over memorized facts. The boilerplate,
+   dropins, and product features evolve.
+
+---
+
+## Guardrails (all skills)
+
+- **No invented URLs.** Only reference URLs retrieved from official docs or provided by the user.
+- **No internal tools or channels.** Never recommend internal Slack channels, internal dashboards,
+  or Adobe-employee-only resources.
+- **No patching closed-source packages.** Drop-in components are closed-source npm packages.
+  Never suggest forking or monkey-patching files in `scripts/__dropins__/`. Only documented
+  extension points (containers, slots, `overrideGQLOperations`, event bus) are fair game.
+- **No speculation.** If the answer isn't in the docs or the user's code, say so and suggest
+  how to find it (which doc to check, which team to contact via official support).
+
+---
+
+## Terminology (enforce consistently)
+
+| Use | Not |
+|---|---|
+| Adobe Commerce | Magento (except when referring to the legacy PaaS PHP codebase specifically) |
+| Storefront Configuration | config.json (as the primary term) |
+| Document Authoring (DA) | just "DA" on first mention without expansion |
+| Adobe Commerce Optimizer (ACO) | just "ACO" on first mention |
+| Adobe Commerce Cloud Service (ACCS) | just "ACCS" on first mention |
