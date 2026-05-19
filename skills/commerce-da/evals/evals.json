@@ -1,0 +1,47 @@
+{
+  "skill_name": "commerce-da",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm trying to access my DA site at admin.da.live but I get a 'Not permitted' error even though I'm logged in with my Adobe ID. What's going on?",
+      "expected_output": "Should distinguish authenticated (logged in) vs authorized (in the permissions sheet). Should instruct to check the IMS org switcher first — the user may be in the wrong Adobe org. Should explain the sheet-based ACL at da.live/config#/<org>/ and that access is granted via email addresses or IMS user groups. Should note that if no one has CONFIG write access, the user must contact Adobe support through their official support channel (not reference internal channels).",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "How do I create a new content page for my EDS storefront using Document Authoring?",
+      "expected_output": "Should explain the DA content authoring workflow: create a new document in the DA site (da.live), structure it with sections and blocks, use the Sidekick browser extension to preview (aem.page) and publish (aem.live). Should explain that the URL path in DA maps to the URL on the storefront. Should fetch from the authoring guide for current step-by-step details.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "How do I add a product recommendations block to a content page? I want it to show 'Most Viewed' products.",
+      "expected_output": "Should explain that blocks are added in DA as tables with the block name in the first cell and configuration rows below. For product recommendations specifically: the DA table structure with recId (the recommendation ID from ACO) and optionally currentSku for context-aware types. Should note Most Viewed is a recommendation type configured in ACO, not a DA setting. Should fetch from merchants-authoring.txt for Commerce-specific block authoring details.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "How do I update the navigation on my EDS storefront? Where is it managed?",
+      "expected_output": "Should explain that navigation is typically a DA document (nav.docx or similar) at a specific path in the DA site, and that the nav block in the code repo renders it. Should explain the preview/publish workflow for content updates. Should advise checking the user's existing DA site structure and the nav block in their code repo to understand how their specific navigation is wired up.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I edited a page in DA but the changes aren't showing on my live site. I can see the updates on the preview URL (aem.page) but not on the live URL (aem.live).",
+      "expected_output": "Should explain the two-step workflow: Preview (aem.page) and Publish (aem.live) are separate steps. The user has previewed but not published. Should explain how to publish using the Sidekick extension (Publish button) or the AEM Admin API. Should fetch from authoring docs for current Sidekick publish workflow.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "How do I add SEO metadata like a page title, description, and og:image to a content page in DA?",
+      "expected_output": "Should explain the Metadata block in DA — a table with 'Metadata' in the header cell and key-value rows for title, description, image, etc. Should explain how these map to HTML meta tags on the rendered page. Should fetch from merchants-authoring.txt or the authoring guide for the current metadata block format.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "I want to give a new team member access to author content in our DA site. How do I add them?",
+      "expected_output": "Should explain the sheet-based ACL at da.live/config#/<org>/. Should cover: someone with CONFIG write access must edit the permissions sheet, access can be granted by individual email or IMS user group, and the user must log in with an Adobe IMS-supported account. Should note users can authenticate via any IDP supported by Adobe IMS (not only Adobe ID). Should fetch from aem.live admin docs for current permission sheet format.",
+      "files": []
+    }
+  ]
+}
