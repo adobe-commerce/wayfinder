@@ -1,0 +1,23 @@
+{
+  "skill_name": "commerce-setup",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm setting up a new EDS storefront connected to Adobe Commerce Optimizer (ACO). I have my ACO tenant ID, catalog view ID, and price book ID, plus my Adobe Commerce GraphQL URL. What do I need to set up in Storefront Configuration to get it working?",
+      "expected_output": "Correct Storefront Configuration JSON with commerce-endpoint, commerce-core-endpoint, adobe-commerce-optimizer flag, and headers with AC-View-ID. Should explain that AC-Price-Book-ID is optional (auth dropin auto-determines it), explain the AEM Admin API mechanism for managing config, and note the 2h cache behavior.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I navigate to da.live for my org and I see 'Not permitted'. In DevTools I can see a 403 on a request to admin.da.live. I'm logged in with my Adobe ID. What's going on and how do I fix it?",
+      "expected_output": "Correct diagnosis: authenticated but not authorized (403 = auth OK, not in permissions sheet). Should explain the sheet-based ACL, what CONFIG and /+** rows mean, suggest checking the IMS org switcher first, and say to contact Adobe support (not #da-dev Slack) if no one has CONFIG write access.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I just created a new repo from the aem-boilerplate-commerce GitHub template. What are the next steps to get it running locally and pointed at my DA content source?",
+      "expected_output": "Step-by-step: configure fstab.yaml first (one-time init, before installing Code Sync), install AEM Code Sync app, clone repo, npm install (auto-runs install:dropins via postinstall), preview/publish content in DA to verify, then configure Storefront Configuration. Should note fstab.yaml is one-time only and aem up serves at localhost:3000.",
+      "files": []
+    }
+  ]
+}

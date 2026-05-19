@@ -1,0 +1,23 @@
+// This is the prompt used to start this entire project.
+
+The goal of this project is to create a set of Claude skills which can be used to assist a software engineer working on Adobe Commerce projects, in a variety of ways. The skills should be designed to be context-friendly, and to be able to handle a variety of different scenarios, use cases, and questions. Ultimately, we aim for a user to be able to open their developer agent of choice (Claude, Codex, Cursor, etc) either in a GUI (e.g. Claude Desktop), an IDE (e.g. Cursor), or a CLI (e.g. Claude CLI) and have it assist them with their Adobe Commerce projects at any point. The source of truth for knowledge is always official Adobe Commerce documentation, which can be found at either:
+
+- https://experienceleague.adobe.com/en/docs/commerce (landing page for all Commerce docs "on experience league")
+- storefront docs: https://experienceleague.adobe.com/developer/commerce/storefront/llms.txt (landing page for all Storefront docs. These are from a microsite on experience league)
+- aem.live: https://www.aem.live/llms.txt (landing page for all EDS docs. These are from a microsite on aem.live)
+
+Some example use cases for the skills:
+
+- creating and configuring an ACCS (Adobe Commerce Cloud Service) or ACO (Adobe Commerce Optimizer) backend environment.
+- creating and configuring an Adobe commerce on EDS storefront, using the hlxsites/aem-boilerplate-commerce code repository.
+- adding/customizing "content pages" to the EDS site
+- adding/customizing "blocks" on a content page
+- adding/customzing block code in the EDS code repo
+- using/extending a dropin in the EDS code repo, such as a vanilla implementation or a custom case, such as overriding graphql fragments, using slots, etc.
+- Implenting and customizing aem-commerce-prerender for the EDS site
+- Creating a new "product recommendation unit" and then having that appear on the site, using product-recommendations dropin.
+- Troubleshooting and debugging issues with the site, such as debugging why a product is not appearing on the site, or why there are no search results, or why a certain error is appearing, etc.
+- Troubleshooting and debugging access issues such as for content authoring, and content publication, in EDS.
+- knowing how to access various UIs and dashboards, such as a view for content authoring, a view of ACO admin, a view of ACCS or PaaS admin, etc, using things like EDS org and site, ACCS tenant id, etc.
+
+Before we start, help me "prompt engineer" this prompt.

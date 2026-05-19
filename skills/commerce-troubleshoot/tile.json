@@ -1,0 +1,11 @@
+{
+  "name": "local/commerce-troubleshoot",
+  "version": "0.1.0",
+  "private": true,
+  "summary": "Helps software engineers debug and troubleshoot Adobe Commerce EDS storefront issues. Use this skill whenever someone reports a problem with their Commerce storefront, such as: products showing $0.00 prices; search returning no results; a 418 Configuration Error page; DA content authoring access denied or \"Not permitted\" in da.live; CDN sync not updating files; config changes not taking effect; cart or checkout errors; CORS errors in browser DevTools; GraphQL requests failing or going to the wrong endpoint; drop-ins not loading; or any other runtime or configuration error on an EDS Commerce storefront. Also use when the user asks \"why isn't X working\" or \"how do I debug Y\" for any Commerce storefront component.\n",
+  "skills": {
+    "commerce-troubleshoot": {
+      "path": "SKILL.md"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Eval run outputs and results
+**/with_skill/outputs/
+**/without_skill/outputs/
+**/grading.json
+**/eval_metadata.json
+**/benchmark.json
+**/benchmark.md
+**/feedback.json

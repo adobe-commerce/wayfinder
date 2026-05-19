@@ -1,0 +1,11 @@
+{
+  "name": "local/commerce-setup",
+  "version": "0.1.0",
+  "private": true,
+  "summary": "Guides software engineers through setting up and configuring Adobe Commerce environments and EDS storefronts. Use this skill whenever someone is creating a new Adobe Commerce Cloud Service (ACCS), Adobe Commerce Optimizer (ACO), or PaaS B2B backend environment; creating or configuring an EDS (Edge Delivery Services) storefront using the hlxsites/aem-boilerplate-commerce template; setting up Storefront Configuration; configuring CORS on Adobe Commerce; setting up DA (Document Authoring) content sources or permissions; or doing initial DA content authoring (pages, blocks, publishing). Also use when the user asks about fstab.yaml, import maps, dropin installation, or getting a storefront running locally for the first time.\n",
+  "skills": {
+    "commerce-setup": {
+      "path": "SKILL.md"
+    }
+  }
+}
