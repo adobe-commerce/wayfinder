@@ -13,35 +13,30 @@ description: >
 
 # Commerce DA Skill
 
-You are helping a software engineer or content author work with Document Authoring (DA) on
-an Adobe Commerce EDS project.
-
-## Who you are helping
-
-An external developer or content author — partner, ISV, or customer. Not an Adobe employee.
-Only reference public information. Never recommend internal Slack channels, internal dashboards,
-or Adobe-employee-only resources.
-
----
-
 ## Source authority
 
-DA documentation is split across two locations:
+DA documentation is split across three locations. When they conflict, the domain owner wins:
 
 | Domain | Authoritative source | Entry point |
 |---|---|---|
-| DA platform, authoring workflow, permissions | **aem.live** | `https://www.aem.live/llms.txt` |
+| DA platform — authoring interface, DA org/site setup, DA-specific permissions/ACL | **docs.da.live** | `https://da.live/docs` |
+| EDS platform — blocks, CDN, publish workflow, Admin API | **aem.live** | `https://www.aem.live/llms.txt` |
 | Commerce-specific content authoring (blocks, merchants) | **ExL Storefront** | `https://experienceleague.adobe.com/developer/commerce/storefront/llms.txt` |
 
-`da.live/docs` and `docs.da.live` exist as navigation hubs but have limited content — the
-substantive documentation is on aem.live. Follow links from `da.live/docs` for DA-specific
-topics, but fetch the actual content from aem.live.
+Some DA questions span both docs.da.live and aem.live (e.g. "how do I publish from DA to my
+EDS site"). Fetching from both is correct in those cases.
 
 ---
 
 ## Fetch strategy
 
-**aem.live sections** (primary for DA topics)
+**docs.da.live** (primary for DA-platform topics)
+
+No `llms.txt`. Fetch `https://da.live/docs` as the discovery hub to find the relevant
+DA-specific pages, then fetch those pages. Use for: DA authoring interface, DA org/site
+setup, DA permissions/ACL.
+
+**aem.live sections** (for EDS-general topics that overlap with DA)
 
 | Topic | URL |
 |---|---|
@@ -51,34 +46,15 @@ topics, but fetch the actual content from aem.live.
 | Placeholders | `https://www.aem.live/docs/placeholders.md` |
 | Sidekick (preview/publish browser extension) | `https://www.aem.live/docs/sidekick.md` |
 | Block markup and structure (for understanding block authoring) | `https://www.aem.live/developer/markup-sections-blocks.md` |
-| Admin API (permissions, content source config) | `https://www.aem.live/docs/admin.html` |
-| DA navigation hub (for discovering additional DA-specific pages) | `https://da.live/docs` |
+| Admin API (content source config, sync) | `https://www.aem.live/docs/admin.html` |
+
+For the full aem.live index: `https://www.aem.live/llms.txt`
 
 **ExL Storefront section** (for Commerce-specific content authoring)
 
 | Topic | URL |
 |---|---|
 | DA content authoring for Commerce (pages, blocks, section metadata, page metadata) | `https://experienceleague.adobe.com/developer/commerce/storefront/_llms-txt/merchants-authoring.txt` |
-
-For the full aem.live index: `https://www.aem.live/llms.txt`
-
----
-
-## DA permissions — key facts
-
-DA uses a sheet-based ACL, not a file in the code repo. When a user sees "Not permitted"
-or a 403 on `admin.da.live`:
-
-1. **Check the IMS org switcher first** — top right in the DA UI. The user may be authenticated
-   to the wrong org.
-2. Users can authenticate via any IDP supported by Adobe IMS (not only Adobe ID).
-3. The permissions sheet lives at `da.live/config#/<org>/` — someone with `CONFIG write` access
-   must grant permissions.
-4. Access can be granted to individual email addresses or IMS user groups.
-5. If no one has `CONFIG write` access, the user must contact Adobe support through their
-   official support channel.
-
-Fetch `https://www.aem.live/docs/admin.html` for full permissions API documentation.
 
 ---
 
@@ -95,11 +71,25 @@ If filesystem access is not available, ask the user which DA org and site they a
 
 ---
 
-## Guardrails
+## Workflow
 
-- **No invented URLs.** Only reference URLs retrieved from official docs or provided by the user.
-- **No internal resources.** No internal Slack channels, internal dashboards, or Adobe-only tools.
-- **No speculation.** If the answer is not in the docs, say so and point to official support.
+1. **Identify the source** — DA-platform topics (authoring interface, permissions, org/site setup) → start with `docs.da.live`. EDS-general topics (blocks, publish workflow, Admin API) → start with `aem.live`. Many DA questions need both.
+2. **Check the repo** (if available) — read `blocks/` to understand which blocks exist and their DA table structure. Read `fstab.yaml` to confirm the DA org/site.
+3. **Fetch** — retrieve the relevant section. For `docs.da.live`, start from `https://da.live/docs` to discover the right page, then fetch it.
+4. **If the first fetch doesn't answer** — fetch from the other source; DA knowledge bridges both locations.
+5. **Synthesize** — explain the workflow or concept clearly. Cite the doc URL.
+
+Common starting points by scenario:
+
+| Scenario | Start here |
+|---|---|
+| "Not permitted" / access error | `da.live/docs` (discovery) + `admin.html` (aem.live) |
+| Creating or editing a content page | `authoring-guide.md` (aem.live) + `merchants-authoring.txt` (ExL) |
+| Preview vs. publish / Sidekick | `sidekick.md` (aem.live) |
+| Adding a block to a page | Read `blocks/` in repo, then `markup-sections-blocks.md` (aem.live) |
+| Page metadata or section metadata | `authoring-guide.md` + `merchants-authoring.txt` |
+| Bulk metadata | `bulk-metadata.md` (aem.live) |
+| Adding a team member / permissions | `da.live/docs` (discovery) + `admin.html` (aem.live) |
 
 ---
 

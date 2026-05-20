@@ -16,7 +16,7 @@ Slack channels, or internal-only URLs must NEVER be recommended.
 
 ## Target user
 
-A software engineer (partner, ISV, or customer) building on Adobe Commerce. They may be:
+Primarily a software engineer (partner, ISV, or customer) building on Adobe Commerce. They may be:
 
 - Setting up or configuring a new environment (backend, storefront, or both)
 - Developing features (blocks, dropins, App Builder apps, backend customizations)
@@ -24,7 +24,9 @@ A software engineer (partner, ISV, or customer) building on Adobe Commerce. They
 - Authoring or managing content in Document Authoring (DA)
 - Trying to understand how the system fits together
 
-They are not necessarily Adobe employees and should never be directed to internal resources.
+The skills additionally serve content authors who may not be software engineers — non-technical users who work with content (da.live, google docs, sharepoint, BYOM, etc) to create and manage storefront content.
+
+All users are external to Adobe and should never be directed to internal resources.
 
 ---
 
@@ -61,9 +63,9 @@ each authoritative for its domain:
 | Source | Entry point | llms.txt | Authoritative for |
 |---|---|---|---|
 | ExL Storefront | `https://experienceleague.adobe.com/developer/commerce/storefront/llms.txt` | Yes | EDS storefront, dropins, blocks, boilerplate, recommendations, prerender, Storefront Configuration |
-| aem.live | `https://www.aem.live/llms.txt` | Yes | EDS platform (Code Sync, Admin API, CDN, fstab), Document Authoring platform |
+| aem.live | `https://www.aem.live/llms.txt` | Yes | EDS platform (Code Sync, Admin API, CDN, fstab, blocks, publish workflow) |
 | ExL Commerce | `https://experienceleague.adobe.com/en/docs/commerce` | No | Adobe Commerce backend — ACCS, ACO, PaaS, B2B, catalog, data export, admin |
-| docs.da.live | `https://da.live/docs` | No | Document Authoring — content workflow, authoring, publishing, permissions |
+| docs.da.live | `https://da.live/docs` | No | DA platform — the DA authoring interface, DA org/site setup, DA-specific permissions/ACL |
 
 ### Fetch strategy per source
 
@@ -72,17 +74,18 @@ each authoritative for its domain:
 - **ExL Commerce** — no `llms.txt`. Fetch the hub page to get section links, then fetch the
   relevant section pages. The hub returns navigable content. The ExL search page is
   JavaScript-rendered and not useful for WebFetch.
-- **docs.da.live** — no llms.txt; both `da.live/docs` and `docs.da.live` are navigation hubs
-  with limited content. The substantive DA documentation lives on aem.live — use the aem.live
-  llms.txt to find DA-specific sections, and supplement with `da.live/docs` for navigation links.
+- **docs.da.live** — no `llms.txt`. Fetch `https://da.live/docs` as the discovery hub to find
+  the relevant DA-specific pages. aem.live also contains DA-related content (accessible via its
+  `llms.txt`). Some DA questions require fetching from both.
 
 ### Conflict resolution
 
 When sources conflict, the domain owner wins:
-- EDS platform (Code Sync, fstab, Admin API, CDN) → **aem.live**
-- Document Authoring features and workflow → **docs.da.live**
+- EDS platform (Code Sync, fstab, Admin API, CDN, blocks, publishing) → **aem.live**
+- DA platform (authoring interface, DA org/site setup, DA permissions/ACL) → **docs.da.live**
 - Storefront dropins, blocks, Storefront Configuration → **ExL Storefront**
 - Commerce backend, B2B, catalog, ACO/ACCS admin → **ExL Commerce**
+- DA questions that span both EDS and DA platform → fetch both **aem.live** and **docs.da.live**
 
 ---
 

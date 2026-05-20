@@ -15,16 +15,6 @@ description: >
 
 # Commerce Storefront Skill
 
-You are helping a software engineer build or troubleshoot an Adobe Commerce EDS storefront.
-
-## Who you are helping
-
-An external developer — partner, ISV, or customer. Not an Adobe employee. Only reference
-public information. Never recommend internal Slack channels, internal dashboards, or
-Adobe-employee-only resources.
-
----
-
 ## Source authority
 
 Two sources cover this skill. When they conflict, the domain owner wins:
@@ -96,15 +86,25 @@ the relevant code.
 
 ---
 
-## Guardrails
+## Workflow
 
-- **No invented URLs.** Only reference URLs retrieved from official docs or provided by the user.
-- **No internal resources.** No internal Slack channels, internal dashboards, or Adobe-only tools.
-- **No patching drop-ins.** Files in `scripts/__dropins__/` are closed-source npm packages.
-  Only documented extension points are valid: granular containers, slots,
-  `overrideGQLOperations`, and the event bus.
-- **No speculation.** If the answer is not in the docs or the user's code, say so and point
-  to where it might be found (which doc section, official support channel).
+1. **Check the repo** (if available) — read the files most relevant to the question before fetching docs.
+2. **Pick the right section** — use the fetch strategy table above.
+3. **Fetch** — retrieve that section before answering. Do not rely on static knowledge for specifics.
+4. **If the first fetch doesn't answer** — try `troubleshooting.txt`, or fetch the full index at the ExL Storefront `llms.txt` for a more specific section.
+5. **Synthesize** — combine repo findings and fetched docs. Cite the doc URL.
+
+Common starting points by scenario:
+
+| Scenario | Start here |
+|---|---|
+| $0.00 prices / CORS errors | `setup-reference.txt` + `troubleshooting.txt` |
+| 418 Configuration Error | `troubleshooting.txt` |
+| Drop-in customization (containers, slots, events) | Read `scripts/__dropins__/<name>/`, then `dropins-reference.txt` |
+| CDN not syncing / Code Sync issues | `anatomy-of-a-project.md` (aem.live) |
+| New storefront setup | `get-started.txt`, then `boilerplate.txt` |
+| GraphQL field customization | `build.mjs` in the repo, then `how-tos.txt` |
+| Product recommendations | `dropins-reference.txt` + `sdk-reference.txt` |
 
 ---
 

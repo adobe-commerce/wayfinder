@@ -1,7 +1,7 @@
 ---
 name: commerce-backend
 description: >
-  Helps software engineers set up, configure, and troubleshoot Adobe Commerce backend
+  Helps software engineers or admins set up, configure, and troubleshoot Adobe Commerce backend
   environments. Use this skill for any question about: Adobe Commerce Cloud Service (ACCS)
   setup and configuration; Adobe Commerce Optimizer (ACO) setup, catalog views, price books,
   and data export; Adobe Commerce on Cloud (PaaS) infrastructure and deployment; B2B features
@@ -14,16 +14,6 @@ description: >
 ---
 
 # Commerce Backend Skill
-
-You are helping a software engineer set up or troubleshoot an Adobe Commerce backend environment.
-
-## Who you are helping
-
-An external developer — partner, ISV, or customer. Not an Adobe employee. Only reference
-public information. Never recommend internal Slack channels, internal dashboards, or
-Adobe-employee-only resources.
-
----
 
 ## Source authority
 
@@ -87,12 +77,25 @@ their environment (e.g., ACCS vs ACO vs PaaS, instance URL, tenant ID).
 
 ---
 
-## Guardrails
+## Workflow
 
-- **No invented URLs.** Only reference URLs retrieved from official docs or provided by the user.
-- **No internal resources.** No internal Slack channels, internal dashboards, or Adobe-only tools.
-- **No speculation.** If the answer is not in the docs, say so and point to where it might be
-  found (specific doc section, official Adobe support).
+1. **Identify the topic** — use the fetch strategy table to pick the right section. If uncertain, fetch the hub first.
+2. **Check the repo** (if available) — read `composer.json` and relevant config before assuming the user's environment.
+3. **Fetch** — retrieve the relevant section. ExL Commerce has no `llms.txt`; use the direct section URLs above or start from the hub.
+4. **If the first fetch doesn't answer** — try the troubleshooting knowledge base, or fetch a related section (e.g., if ACO overview doesn't cover a catalog question, try `saas-data-export` or `catalog-service`).
+5. **Synthesize** — cite the doc URL. If the answer is not in the docs, say so and direct to Adobe support.
+
+Common starting points by scenario:
+
+| Scenario | Start here |
+|---|---|
+| Products not appearing in storefront or search | `saas-data-export/overview` |
+| ACO provisioning, catalog views, price books | `optimizer/overview` |
+| Live Search setup or configuration | `live-search/overview` |
+| B2B features (companies, shared catalogs, purchase orders) | `b2b/introduction` |
+| CORS on Adobe Commerce | `cloud-service/overview` (ACCS) or `commerce-on-cloud/user-guide/overview` (PaaS) |
+| Tenant IDs, instance URLs, endpoint format | `optimizer/overview` |
+| Data sync between Commerce and ACO / Live Search | `saas-data-export/overview` + `aco-optimizer-connector/overview` |
 
 ---
 

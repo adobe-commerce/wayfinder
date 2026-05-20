@@ -16,7 +16,7 @@
     {
       "id": 2,
       "prompt": "My products are not showing up in Live Search on my storefront. The catalog looks correct in the Adobe Commerce admin. What should I check?",
-      "expected_output": "Should identify the SaaS data export as the likely culprit — products must sync from Adobe Commerce to the Catalog Service before they appear in Live Search or ACO. Should explain the data export pipeline and how to check sync status. Should cover: verifying the SaaS data export module is installed and running, checking for sync errors, and how to trigger a manual re-index. Should fetch from saas-data-export docs.",
+      "expected_output": "Should identify the SaaS data export as the likely culprit — products must sync from Adobe Commerce to the Catalog Service before they appear in Live Search or ACO. Should explain the data export pipeline and how to check sync status. Should cover: verifying the SaaS data export module is installed and running, checking for sync errors, and how to trigger a manual re-index. Should note sync timing as a diagnostic: incremental changes take up to ~15 minutes, initial full sync can take 30–60+ minutes. Should fetch from saas-data-export docs.",
       "files": []
     },
     {
