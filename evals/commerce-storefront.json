@@ -1,0 +1,59 @@
+{
+  "skill_name": "commerce-storefront",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "My storefront is showing $0.00 for all product prices. Everything else looks fine — products are loading, search works. Where do I start debugging?",
+      "expected_output": "Should narrow down where prices come from in an EDS + ACO setup: the Catalog Service resolves prices from the Price Book associated with the active catalog view. Diagnostic steps should cover at least 2 to 3 of: (a) inspect the Catalog Service request in DevTools Network tab to see whether prices are zero in the JSON response itself vs. just in the rendered UI; (b) verify Storefront Configuration headers.cs contains a valid AC-View-ID; (c) confirm in ACO admin that the catalog view has an associated Price Book and that the Price Book is populated; (d) check that price data has synced from Adobe Commerce to ACO via the Optimizer Connector or SaaS data export. Should not invent header names — any header named should match the documented names from the Adobe Commerce storefront configuration documentation.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I'm setting up a brand new EDS storefront. I've forked the boilerplate and connected it to my DA site. What do I need to configure to get it talking to my ACO backend?",
+      "expected_output": "Should cover the documented setup for an EDS storefront talking to ACO: (1) the Storefront Configuration file is `config.json` in the repo (taking precedence when present) and is also managed at the EDS Config Service at `admin.hlx.page/config/{ORG}/sites/{SITE}/public.json` for production — the docs warn not to commit `config.json` to `main` for production sites. (2) Minimum documented config keys for ACO: `commerce-endpoint` (ACO GraphQL endpoint), `headers.cs.AC-View-ID` (catalog view ID, required), `analytics.environment-id` (tenant ID), `analytics.view-id`, and `analytics.base-currency-code`. `headers.cs.AC-Price-Book-ID` is documented as optional. (3) The configuration is cached by the EDS CDN with `max-age=7200` (2 hours), so changes take up to 2 hours to propagate. Should not invent config keys — any key cited should match documented names.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I'm getting a 418 Configuration Error page when I load my storefront. The page just says 'Configuration Error'. How do I fix this?",
+      "expected_output": "Should walk through documented diagnostics for a Configuration Error on storefront load: (1) Clear stale config — the configuration is cached in browser `sessionStorage` and on the EDS CDN (`max-age=7200`, 2 hours); use DevTools > Application > Session Storage to clear, or test in an incognito window. (2) Validate the Storefront Configuration JSON is well-formed and contains the required keys for the active backend. (3) Verify the configured endpoints (e.g. `commerce-endpoint`) are reachable — a direct curl against the endpoint distinguishes a network/CORS failure from a config-parsing failure. (4) Inspect the browser console — startup errors from the storefront's initialization scripts surface there. Should not assert specific internal causes (e.g. \"418 means X function threw\") unless documented.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to add a custom warranty_info field from my product catalog to the PDP. The attribute exists in Adobe Commerce. How do I get it to show up in the drop-in?",
+      "expected_output": "Should explain overrideGQLOperations in build.mjs as the correct approach — add the field to the ProductDetailsFragment. Should note prerequisites: 'Use in GraphQL' must be enabled on the attribute in Adobe Commerce admin, and if using ACO/Catalog Service it must also be synced via SaaS data export. Should explain that after modifying build.mjs, npm install must be re-run.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I pushed a change to my storefront repo but the update isn't showing on my aem.live URL. It's been 10 minutes. What's wrong?",
+      "expected_output": "Should cover: (1) Verify AEM Code Sync GitHub App is installed on the repo. (2) File paths on CDN are case-sensitive. (3) Check sync status via AEM Admin API. (4) Force re-sync options: Admin API POST, trivial commit to trigger webhook, or PR checkbox. Should reference aem.live docs for Admin API authentication details.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "How do I add a product recommendations unit to a category page? It's not a PDP so I'm not sure how to pass the context.",
+      "expected_output": "Should explain the DA block structure for product-recommendations with recId and currentSku fields. Should clarify that currentSku is only needed on non-PDP pages when using context-aware recommendation types (e.g. Customers Also Viewed) — on a PDP the block auto-detects SKU from adobeDataLayer. Should advise fetching the dropins-reference.txt for current container API details before recommending specific implementation.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "How do I customize the layout of the cart drop-in? I want to move the order summary to the left side.",
+      "expected_output": "Should identify this as a drop-in customization question. Should explain the granular containers approach — render individual containers into a custom DOM structure rather than using a monolithic container. Should warn not to modify files in scripts/__dropins__/ directly (closed-source). Should advise fetching dropins-reference.txt for the cart drop-in's available containers and slots before giving specific container names.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "What is the difference between commerce-endpoint and commerce-core-endpoint in Storefront Configuration? Do I need both?",
+      "expected_output": "Should clearly explain the two-endpoint split: commerce-endpoint is always ACO (Catalog Service) — handles search, PDP, recommendations, pricing. commerce-core-endpoint is Adobe Commerce (transactions) — handles cart, checkout, auth, B2B. Should note that commerce-core-endpoint is optional: if omitted, both fall back to commerce-endpoint, which means ACO handles everything (only valid if ACO supports those operations). Should advise fetching setup-reference.txt for the full config key reference.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "How do I create a new custom block for my EDS storefront? I want to build a featured-products block that shows a hardcoded list of SKUs.",
+      "expected_output": "Should explain the block structure: blocks/<name>/<name>.js exporting a default decorate(block) function, optional <name>.css. Should explain how to read block config from DA using readBlockConfig. Should note blocks are triggered by EDS based on section markup in DA. Should advise checking blocks-reference.txt for current patterns and the user's existing blocks/ directory for conventions used in their repo.",
+      "files": []
+    }
+  ]
+}
