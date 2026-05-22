@@ -1,5 +1,0 @@
-TODO:
-- validate llms.txt vs html content: test with claude-ext using html content vs llms.txt content
-- validate llms.txt first or second: test skills with llms.txt first vs llms.txt as fallback
-- look into how to get user feedback from skill usage to identify documentation gaps or AGENTS.md improvements
-  - can we add to skills "did this work?" which would send some detail to some endpoint with response + feedback / context (if safe?)
