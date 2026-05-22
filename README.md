@@ -12,6 +12,9 @@ Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-co
 
 That's it. Your agent will fetch the routing guide at the start of each session and use it when answering Commerce questions.
 
+<img width="800" height="502" alt="switchboard-use" src="https://github.com/user-attachments/assets/6548a7eb-e80d-449d-b590-a08869fe5857" />
+
+
 ## How it works
 
 `skills/AGENTS.md` is a slim router loaded as agent context. It maps user questions to one of five per-source guides in `skills/docs/`. Each guide provides entry points and fetch-first instructions so the agent retrieves authoritative docs rather than guessing.
