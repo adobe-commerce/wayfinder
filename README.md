@@ -2,6 +2,16 @@
 
 An AGENTS.md-based documentation-routing system for AI agents working across Adobe Commerce's distributed doc ecosystem (EDS storefront, Experience League, Document Authoring, AEM/EDS, and the Commerce developer platform).
 
+## Using these skills in your project
+
+Open (or create) `AGENTS.md` at the root of your Commerce repo and add the following line at the top:
+
+```
+Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/commerce-dx-skills/main/skills/AGENTS.md
+```
+
+That's it. Your agent will fetch the routing guide at the start of each session and use it when answering Commerce questions.
+
 ## How it works
 
 `skills/AGENTS.md` is a slim router loaded as agent context. It maps user questions to one of five per-source guides in `skills/docs/`. Each guide provides entry points and fetch-first instructions so the agent retrieves authoritative docs rather than guessing.

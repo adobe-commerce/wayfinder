@@ -2,6 +2,4 @@
 
 This is an Adobe Commerce App Builder project.
 
-Before answering any question, fetch and follow the agent guidance at: @../../skills/AGENTS.md
-
-Read that file completely before routing to a per-source guide or fetching documentation.
+Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/commerce-dx-skills/main/skills/AGENTS.md
