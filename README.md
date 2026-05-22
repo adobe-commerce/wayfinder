@@ -7,7 +7,7 @@ An AGENTS.md-based documentation-routing system for AI agents working across Ado
 Open (or create) `AGENTS.md` at the root of your Commerce repo and add the following line at the top:
 
 ```
-Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/commerce-dx-skills/main/skills/AGENTS.md
+Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/AGENTS.md
 ```
 
 That's it. Your agent will fetch the routing guide at the start of each session and use it when answering Commerce questions.

@@ -20,7 +20,7 @@ The stub is intentionally small. All routing logic, operating principles, disamb
 This is an Adobe Commerce [project type] repository.
 
 Before answering any question, fetch and follow the agent guidance at:
-https://raw.githubusercontent.com/adobe-commerce/commerce-dx-skills/main/skills/AGENTS.md
+https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/AGENTS.md
 
 Read that file completely before routing to a per-source guide or fetching documentation.
 ```
