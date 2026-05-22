@@ -18,13 +18,13 @@ That's it. Your agent will fetch the routing guide at the start of each session 
 
 ```
 skills/
-  AGENTS.md            # router — loaded as agent context
+  AGENTS.md                # router — loaded as agent context
   docs/
-    storefront.md      # Commerce EDS drop-ins, boilerplate, storefront GraphQL
-    experience-league.md  # Admin, B2B, catalog, cloud (PaaS/SaaS)
-    document-authoring.md # da.live authoring workflow and permissions
-    aem-eds.md         # AEM blocks, CDN, Sidekick
-    commerce-developer.md # App Builder, API Mesh, extensibility
+    storefront.md          # Commerce EDS drop-ins, boilerplate, storefront GraphQL
+    experience-league.md   # Admin, B2B, catalog, cloud (PaaS/SaaS)
+    document-authoring.md  # da.live authoring workflow and permissions
+    aem-eds.md             # AEM blocks, CDN, Sidekick
+    commerce-developer.md  # App Builder, API Mesh, extensibility
 evals/
   commerce-storefront.json
   commerce-backend.json
@@ -66,9 +66,9 @@ Without these, the agent falls back to training data instead of fetching live do
 
 **3. Run evals:**
 ```sh
-python3 scripts/run-evals.py                          # all domains
-python3 scripts/run-evals.py commerce-storefront      # one domain
-python3 scripts/run-evals.py commerce-storefront 6    # single eval
+python3 scripts/run-evals.py                                 # all domains
+python3 scripts/run-evals.py commerce-storefront             # one domain
+python3 scripts/run-evals.py commerce-storefront 6           # single eval
 python3 scripts/run-evals.py --runs 3 commerce-storefront 6  # variance testing
 ```
 
