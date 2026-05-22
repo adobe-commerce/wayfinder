@@ -1,4 +1,4 @@
-# Commerce DX Skills
+# Wayfinder
 
 An AGENTS.md-based documentation-routing system for AI agents working across Adobe Commerce's distributed doc ecosystem (EDS storefront, Experience League, Document Authoring, AEM/EDS, and the Commerce developer platform).
 
