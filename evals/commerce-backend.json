@@ -22,7 +22,7 @@
     {
       "id": 3,
       "prompt": "I need to configure CORS on my Adobe Commerce backend to allow requests from my EDS storefront domains. How do I do this?",
-      "expected_output": "Should explain that CORS must be configured on the Adobe Commerce (ACCS or PaaS) side to allow origins like *.aem.live and *.aem.page. Should cover where CORS is configured (environment config, .htaccess, or Nginx depending on deployment). Should note the consequence of missing CORS for EDS storefronts: auth drop-in fails → AC-Price-Book-ID is removed → $0.00 prices. Should fetch from relevant admin/cloud docs for specific configuration steps.",
+      "expected_output": "Should explain that CORS must be configured on the Adobe Commerce (ACCS or PaaS) side to allow origins like *.aem.live and *.aem.page. Should cover where CORS is configured (environment config, .htaccess, or Nginx depending on deployment). Should note that missing CORS will cause authentication requests from the EDS storefront to fail, which can have downstream effects on personalized pricing and checkout. Should fetch from relevant admin/cloud docs for specific configuration steps.",
       "files": []
     },
     {
@@ -41,6 +41,30 @@
       "id": 6,
       "prompt": "I'm running Adobe Commerce on Cloud (PaaS). Do I still need Adobe Commerce Optimizer, or can my EDS storefront connect directly to my PaaS instance?",
       "expected_output": "Should explain that an EDS storefront can connect to a PaaS Adobe Commerce instance directly (commerce-core-endpoint) for transactions. ACO is optional but recommended for catalog/search performance at scale — it provides Catalog Service (faster catalog reads, pricing, recommendations). Without ACO, the storefront falls back to using the PaaS GraphQL for everything including catalog. Should fetch from relevant ExL Commerce docs for current guidance on PaaS + EDS integration.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "I have Adobe Commerce on Cloud (PaaS) and I want to feed my catalog data into Adobe Commerce Optimizer. How do I set up the Optimizer Connector?",
+      "expected_output": "Should explain the ACO Optimizer Connector as the bridge between a PaaS Adobe Commerce instance and Adobe Commerce Optimizer — it syncs catalog, pricing, and inventory data from PaaS to ACO via the SaaS data export pipeline. Should cover: installing the connector module (Composer), configuring the SaaS data export extension with Commerce API keys, and confirming the sync is active. Should note that the Optimizer Connector is separate from a direct PaaS storefront integration — it specifically feeds ACO's catalog layer. Should fetch from the ACO Optimizer Connector docs at experienceleague.adobe.com/en/docs/commerce/aco-optimizer-connector/overview. Must not invent module names or config keys — any specific values cited must come from fetched documentation.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "How do I set up Adobe Payment Services for my Commerce store? What does the onboarding process look like?",
+      "expected_output": "Should explain that Payment Services is a SaaS extension for Adobe Commerce that handles payment processing including credit/debit cards, PayPal, Apple Pay, and Google Pay. Should cover the onboarding steps: installing Payment Services from the Commerce Marketplace (Composer), enabling in Admin under Stores > Configuration > Sales > Payment Methods, completing the Adobe I/O connect and PayPal merchant onboarding, sandbox testing, and switching to production mode. Should note that Payment Services requires a valid Adobe Commerce license and that the sandbox/production modes are switched in the Admin configuration. Should fetch from the ExL Payment Services documentation. Must not invent Admin menu paths or configuration key names — any specifics cited must come from fetched documentation.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "I want to enable Product Recommendations on my Adobe Commerce store. What do I need to install and configure on the backend?",
+      "expected_output": "Should explain that Product Recommendations is a SaaS service powered by Adobe Sensei that requires: (1) installing the product-recommendations Composer module, (2) configuring SaaS data export to sync catalog and behavioral data to Adobe's services, and (3) configuring the Admin (Stores > Configuration) with the SaaS environment API keys. Should explain that behavioral data (browsing, purchases) powers the ML models and that the more data collected, the better the recommendations. Should distinguish backend setup (this question) from storefront rendering of recommendation units (handled by the drop-in/block). Should note that recommendation types like 'Most Viewed' or 'Trending' require sufficient behavioral data before they return results. Should fetch from ExL Product Recommendations documentation. Must not invent config key names or Admin paths.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "I'm deploying Adobe Commerce on Cloud (PaaS). My environment variables are set in the Cloud Console but my store isn't picking up the new values. How does environment configuration work on PaaS?",
+      "expected_output": "Should explain the PaaS configuration hierarchy: environment variables set in the Cloud Console override values in `app/etc/env.php`, but a redeployment (or at least a cache flush) is required for some changes to take effect — specifically, static environment variables defined in `.magento.app.yaml` require a redeploy, while Cloud-Console-only variables propagate without redeployment but may still require cache flush. Should explain that `app/etc/env.php` is generated during deployment from the cloud environment config and `.magento.app.yaml` relationships. Should cover how to verify active config values (`bin/magento config:show` or checking `env.php`). Should fetch from ExL PaaS cloud infrastructure guide. Must not invent specific CLI commands or config hierarchy details — fetch documentation to verify.",
       "files": []
     }
   ]

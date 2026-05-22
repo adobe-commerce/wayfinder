@@ -1,0 +1,16 @@
+application:
+  runtimeManifest:
+    packages:
+      my-commerce-app:
+        license: Apache-2.0
+        actions:
+          commerce-event-handler:
+            function: actions/commerce-event-handler/index.js
+            web: 'no'
+            annotations:
+              require-adobe-auth: true
+          product-sync:
+            function: actions/product-sync/index.js
+            web: 'yes'
+            annotations:
+              require-adobe-auth: true

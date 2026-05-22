@@ -1,0 +1,15 @@
+{
+  "name": "my-commerce-app-builder",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "aio app deploy",
+    "undeploy": "aio app undeploy",
+    "dev": "aio app dev"
+  },
+  "dependencies": {
+    "@adobe/aio-sdk": "^4.0.0",
+    "@adobe/aio-lib-commerce": "^1.0.0",
+    "@adobe/aio-lib-core-config": "^4.0.0",
+    "@adobe/aio-lib-events": "^4.0.0"
+  }
+}

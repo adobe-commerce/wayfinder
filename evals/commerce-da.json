@@ -10,13 +10,13 @@
     {
       "id": 1,
       "prompt": "How do I create a new content page for my EDS storefront using Document Authoring?",
-      "expected_output": "Should explain the DA content authoring workflow: create a new document in the DA site (da.live), structure it with sections and blocks, use the Sidekick browser extension to preview (aem.page) and publish (aem.live). Should explain that the URL path in DA maps to the URL on the storefront. Should fetch from the authoring guide for current step-by-step details.",
+      "expected_output": "Should explain the DA content authoring workflow: create a new document in the DA site (da.live), structure it with sections and blocks, use the Sidekick browser extension to preview (aem.page) and publish (aem.live). Should explain that the URL path in DA maps to the URL on the storefront. Should fetch from the DA or AEM documentation for current step-by-step details.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "How do I add a product recommendations block to a content page? I want it to show 'Most Viewed' products.",
-      "expected_output": "Should explain that blocks are added in DA as tables with the block name in the first cell and configuration rows below. For product recommendations specifically: the DA table structure with recId (the recommendation ID from ACO) and optionally currentSku for context-aware types. Should note Most Viewed is a recommendation type configured in ACO, not a DA setting. Should fetch from merchants-authoring.txt for Commerce-specific block authoring details.",
+      "expected_output": "Should explain that blocks are added in DA as tables with the block name in the first cell and configuration rows below. For product recommendations specifically: the DA table structure with recId (the recommendation ID from ACO) and optionally currentSku for context-aware types. Should note Most Viewed is a recommendation type configured in ACO, not a DA setting. Should fetch from the Storefront or authoring documentation for current Commerce-specific block authoring details.",
       "files": []
     },
     {
@@ -28,19 +28,43 @@
     {
       "id": 4,
       "prompt": "I edited a page in DA but the changes aren't showing on my live site. I can see the updates on the preview URL (aem.page) but not on the live URL (aem.live).",
-      "expected_output": "Should explain the two-step workflow: Preview (aem.page) and Publish (aem.live) are separate steps. The user has previewed but not published. Should explain how to publish using the Sidekick extension (Publish button) or the AEM Admin API. Should fetch from authoring docs for current Sidekick publish workflow.",
+      "expected_output": "Should explain the two-step workflow: Preview (aem.page) and Publish (aem.live) are separate steps. The user has previewed but not published. Should explain how to publish using the Sidekick extension (Publish button) or the AEM Admin API. Should fetch from the DA or AEM documentation for the current Sidekick publish workflow.",
       "files": []
     },
     {
       "id": 5,
       "prompt": "How do I add SEO metadata like a page title, description, and og:image to a content page in DA?",
-      "expected_output": "Should explain the Metadata block in DA — a table with 'Metadata' in the header cell and key-value rows for title, description, image, etc. Should explain how these map to HTML meta tags on the rendered page. Should fetch from merchants-authoring.txt or the authoring guide for the current metadata block format.",
+      "expected_output": "Should explain the Metadata block in DA — a table with 'Metadata' in the header cell and key-value rows for title, description, image, etc. Should explain how these map to HTML meta tags on the rendered page. Should fetch from the DA or AEM authoring documentation for the current metadata block format.",
       "files": []
     },
     {
       "id": 6,
       "prompt": "I want to give a new team member access to author content in our DA site. How do I add them?",
-      "expected_output": "Should explain the sheet-based ACL at da.live/config#/<org>/. Should cover: someone with CONFIG write access must edit the permissions sheet, access can be granted by individual email or IMS user group, and the user must log in with an Adobe IMS-supported account. Should note users can authenticate via any IDP supported by Adobe IMS (not only Adobe ID). Should fetch from aem.live admin docs for current permission sheet format.",
+      "expected_output": "Should explain the sheet-based ACL at da.live/config#/<org>/. Should cover: someone with CONFIG write access must edit the permissions sheet, access can be granted by individual email or IMS user group, and the user must log in with an Adobe IMS-supported account. Should note users can authenticate via any IDP supported by Adobe IMS (not only Adobe ID). Should fetch from the DA or AEM documentation for the current permission sheet format.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "I have 200 product category pages and I want to set SEO metadata for all of them without editing each page individually. Is there a way to do this in bulk in Document Authoring?",
+      "expected_output": "Should explain the bulk metadata approach: a spreadsheet (typically at /metadata.xlsx or /metadata in the DA site) that maps URL path patterns to metadata key-value pairs such as title, description, and image. Should explain that the EDS framework applies this metadata at publish time without needing individual page edits. Should distinguish bulk metadata (spreadsheet-driven, pattern-matching) from page-level Metadata blocks (per-page table in DA). Should note that the bulk metadata sheet must be published via Sidekick to take effect. Should fetch from AEM/EDS documentation for the current bulk-metadata sheet format and path conventions. Must not invent spreadsheet column names or URL patterns.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "I want to use a single text string — like a phone number or promo message — in multiple pages across my DA site, so I only have to update it in one place. How do I do that?",
+      "expected_output": "Should explain the placeholders feature: a spreadsheet (typically at /placeholders.xlsx or accessible at /placeholders.json) that maps placeholder keys to their text values. Should explain that blocks and scripts in the EDS codebase can reference these keys (commonly as {{key}} in DA or via the fetchPlaceholders() utility in JS). Should explain that updating the spreadsheet and republishing propagates the change everywhere the placeholder is used. Should note this is an EDS feature documented in aem.live, not a DA-specific feature, so the agent should fetch from AEM/EDS docs for the current placeholder sheet format and JS utility. Must not invent key syntax or utility function names.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "I want to apply a custom CSS style to just one section of a page in DA, without affecting other sections. How do I do that?",
+      "expected_output": "Should explain section metadata in EDS/DA: adding a Metadata table directly after a section divider (---) in the DA document applies metadata only to that section. The 'style' key in the section metadata table maps to CSS class names added to the section wrapper element. Should explain that this is distinct from a page-level Metadata block (which applies to the whole page). Should note that the CSS classes added via 'style' must exist in the site's stylesheet. Should fetch from AEM/EDS documentation for the current section metadata format. Must not invent section metadata key names beyond what the docs confirm.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "We're starting a new project and I need to create a DA organization and site, then connect it to our EDS code repo. What are the steps?",
+      "expected_output": "Should cover the full setup flow: (1) creating a DA org at admin.da.live (requires Adobe IMS login and org creation); (2) creating a DA site within the org; (3) updating fstab.yaml in the EDS code repo to set the mountpoint to the DA site URL so EDS fetches content from DA; (4) installing the AEM Code Sync GitHub App on the code repo if not already present. Should explain that the mountpoint in fstab.yaml is the root of where DA content is served and must match the DA site URL format. Should fetch from both DA docs (docs.da.live) and AEM/EDS docs (aem.live) for current setup steps. Must not invent fstab.yaml syntax or DA admin UI paths — fetch documentation to confirm.",
       "files": []
     }
   ]

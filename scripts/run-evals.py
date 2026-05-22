@@ -36,8 +36,13 @@ DEFAULT_NUM_RUNS = 1
 
 
 def write_claude_md():
-    """Load AGENTS.md into the external Claude config so claude-ext picks it up."""
-    CLAUDE_MD.write_text(f"@{AGENTS_MD}\n")
+    """Load AGENTS.md and all per-source guides into the external Claude config."""
+    content = f"@{AGENTS_MD}\n"
+    docs_dir = AGENTS_MD.parent / "docs"
+    if docs_dir.is_dir():
+        for guide in sorted(docs_dir.glob("*.md")):
+            content += f"@{guide}\n"
+    CLAUDE_MD.write_text(content)
 
 
 def run_eval(prompt: str, cwd: Path, timeout: int = 300) -> tuple[str, float]:
