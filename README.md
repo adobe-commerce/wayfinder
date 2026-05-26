@@ -4,7 +4,7 @@ An AGENTS.md-based documentation-routing system for AI agents working across Ado
 
 ## Using these skills in your project
 
-Open (or create) `AGENTS.md` at the root of your Commerce repo and add the following line at the top:
+Open (or create) `AGENTS.md` (or `CLAUDE.md` if you're using Claude) at the root of your Commerce repo and add the following line at the top:
 
 ```
 Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/AGENTS.md
