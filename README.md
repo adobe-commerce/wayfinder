@@ -28,13 +28,7 @@ skills/
     document-authoring.md  # da.live authoring workflow and permissions
     aem-eds.md             # AEM blocks, CDN, Sidekick
     commerce-developer.md  # App Builder, API Mesh, extensibility
-evals/
-  commerce-storefront.json
-  commerce-backend.json
-  commerce-da.json
-fixtures/
-  storefront-boilerplate/   # reference repo for storefront layout questions
-  app-builder/              # reference repo for App Builder questions
+    *.md                   # any other unique resource location for documentation
 ```
 
 ## Running evals
