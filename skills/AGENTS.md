@@ -30,7 +30,7 @@ Many questions span multiple sources. Identify every relevant source first, load
 
 ## Boilerplate reference repos
 
-The storefront boilerplate implementations are the authoritative reference for actual code, DOM structure, CSS class names, default block layouts, and default `scripts/` wiring. Use them when the user has no local storefront repo, is on a vanilla boilerplate fork, or you need to verify a specific class name or DOM element before recommending changes.
+The storefront boilerplate repositories are the authoritative reference for actual code, scripts, blocks, DOM structure, CSS class names. Use them when the user has no local storefront repo, is on a vanilla boilerplate fork, or you need to verify a specific class name or DOM element before recommending changes.
 
 | Repo | When to use |
 | --- | --- |
@@ -43,7 +43,7 @@ Fetch specific files via the raw GitHub URL, e.g.:
 https://raw.githubusercontent.com/hlxsites/aem-boilerplate-commerce/main/blocks/commerce-cart/commerce-cart.js
 ```
 
-**Always fetch the boilerplate** when a question is about layout, DOM structure, CSS class names, block JS internals, or any code-level specific the docs alone won't fully resolve.
+**Always fetch the boilerplate** when a question is about storefront layout, DOM structure, CSS class names, block JS internals, or any code-level specific the docs alone won't fully resolve.
 
 ---
 
@@ -56,14 +56,14 @@ When filesystem access is available, read relevant files before answering. The u
 | File / path | Relevant for |
 | --- | --- |
 | `package.json` | Drop-in versions, scripts, build setup |
-| `fstab.yaml` | Content source (DA org/site), folder mappings |
+| `fstab.yaml` | Content source (DA org/site), folder mappings. Deprecated in favor of EDS Configuration Service|
 | `head.html` | Import map — drop-in module aliases |
 | `scripts/commerce.js` | GraphQL client setup, endpoint wiring |
 | `scripts/initializers/` | Per-drop-in initialization (headers, auth, events) |
 | `blocks/<name>/<name>.js` and `<name>.css` | Block implementation for the feature in question |
 | `scripts/__dropins__/<name>/` | Installed drop-in source — read to understand available containers and APIs (read-only; do not modify) |
 | `build.mjs` | GraphQL override configuration (`overrideGQLOperations`) |
-| `config.json` (if present in repo) | Local Storefront Configuration (takes precedence over the served config) |
+| `config.json` (if present in repo) | Local Storefront Configuration (takes precedence over the served config from EDS Configuration Service) |
 
 ### App Builder app
 
