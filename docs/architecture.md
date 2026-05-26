@@ -1,4 +1,4 @@
-# AGENTS.md Pattern — Architecture
+# Wayfinder — Architecture
 
 A documentation-routing pattern for AI agents working across Adobe Commerce's distributed doc ecosystem. Simply, the user prompting the agent provides our entry-file (AGENTS.md) to be read when answering their question. They then provide their question, and the agent will follow the routing logic in AGENTS.md to determine the correct documentation to fetch before synthesizing an answer.
 
