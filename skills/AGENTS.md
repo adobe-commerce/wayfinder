@@ -1,7 +1,7 @@
 # AGENTS.md
 
-> **Remote base URL:** `https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/`
-> Sub-doc paths in this file (e.g. `./docs/storefront.md`) are relative to that base. If you fetched this file remotely, construct absolute URLs by replacing `./docs/` with `https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/docs/`.
+> **Remote base URL:** `https://cdn.jsdelivr.net/gh/adobe-commerce/wayfinder@main/skills/`
+> Sub-doc paths in this file (e.g. `./docs/storefront.md`) are relative to that base. If you fetched this file remotely, construct absolute URLs by replacing `./docs/` with `https://cdn.jsdelivr.net/gh/adobe-commerce/wayfinder@main/skills/docs/`. If you loaded this file from a local filesystem path, the sub-docs are already available at the same relative path on disk — use them directly without fetching.
 
 Guidance for AI agents working in Adobe Commerce repositories. Use this file to route to the right documentation source, then read the per-source guide for that source before answering.
 
