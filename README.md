@@ -31,6 +31,14 @@ skills/
     *.md                   # any other unique resource location for documentation
 ```
 
+## Usage Metrics
+
+jsdelivr tracks requests to the hosted skills files. View stats at:
+
+- **All files:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main/files`
+- **This version:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main`
+- **All versions:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder`
+
 ## Running evals
 
 Evals exercise the full routing chain via an isolated Claude config (`claude-ext`) that loads only `AGENTS.md` and the per-source guides.
