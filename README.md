@@ -35,9 +35,9 @@ skills/
 
 jsdelivr tracks requests to the hosted skills files. View stats at:
 
-- **All files:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main/files`
-- **This version:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main`
-- **All versions:** `https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder`
+- **All files:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main/files
+- **This version:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main
+- **All versions:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder
 
 ## Running evals
 
