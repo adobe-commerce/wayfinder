@@ -2,7 +2,7 @@
 
 > *Let me ~~Google~~ ask an Agent for you.*
 
-Wayfinder is an AGENTS.md-based documentation-routing system for AI agents working across Adobe Commerce's distributed doc ecosystem (EDS (aem.live), Document Authoring (docs.da.live), Experience League (experienceleague.adobe.com), and the Commerce developer platform (developer.adobe.com/commerce)). Its purpose is to help AI agents find the right documentation to answer a user's question.
+Wayfinder is an AGENTS.md-based routing system that helps AI agents find the right documentation source when answering Adobe Commerce questions. Adobe's docs span multiple properties — aem.live, docs.da.live, experienceleague.adobe.com, and developer.adobe.com/commerce — each with different access patterns. Wayfinder directs agents to the right source so they retrieve authoritative docs rather than guessing from training data.
 
 ## Using these skills in your project
 
