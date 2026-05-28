@@ -37,6 +37,10 @@ CLAUDE_MD = CLAUDE_CONFIG_DIR / "CLAUDE.md"
 EVAL_TYPES = ["routing", "synthesis"]
 DEFAULT_NUM_RUNS = 1
 DEFAULT_MAX_FETCHES = 15
+DEFAULT_MODELS = {
+    "routing": "claude-haiku-4-5-20251001",
+    "synthesis": "claude-sonnet-4-6",
+}
 
 
 def write_claude_md():
@@ -50,7 +54,7 @@ def write_claude_md():
     CLAUDE_MD.write_text(f"@{AGENTS_MD}\n")
 
 
-def run_eval(prompt: str, cwd: Path, timeout: int = 300, max_fetches: int = DEFAULT_MAX_FETCHES) -> tuple[str, list[str], float]:
+def run_eval(prompt: str, cwd: Path, timeout: int = 300, max_fetches: int = DEFAULT_MAX_FETCHES, model: str | None = None) -> tuple[str, list[str], float]:
     """Run one eval and return (text_output, fetched_urls, elapsed_seconds)."""
     env = {**os.environ, "CLAUDE_CONFIG_DIR": str(CLAUDE_CONFIG_DIR)}
     fetch_cap = (
@@ -58,9 +62,12 @@ def run_eval(prompt: str, cwd: Path, timeout: int = 300, max_fetches: int = DEFA
         "Once you have enough information to answer confidently, stop fetching and respond."
     )
     start = time.time()
+    cmd = ["claude", "-p", prompt, "--output-format", "stream-json", "--verbose",
+           "--append-system-prompt", fetch_cap]
+    if model:
+        cmd += ["--model", model]
     result = subprocess.run(
-        ["claude", "-p", prompt, "--output-format", "stream-json", "--verbose",
-         "--append-system-prompt", fetch_cap],
+        cmd,
         env=env,
         cwd=cwd,
         capture_output=True,
@@ -119,14 +126,14 @@ def save_result(eval_type: str, eval_id: int, run: int, domain: str, prompt: str
     return path
 
 
-def _execute_one(eval_type: str, ev: dict, run: int, cwd: Path) -> str:
+def _execute_one(eval_type: str, ev: dict, run: int, cwd: Path, model: str | None = None) -> str:
     """Run one (eval, run) and return a status line to print."""
     eval_id = ev["id"]
     domain = ev.get("domain", eval_type)
     prompt = ev["prompt"]
     expected = ev["expected_output"]
     try:
-        actual, fetched_urls, elapsed = run_eval(prompt, cwd)
+        actual, fetched_urls, elapsed = run_eval(prompt, cwd, model=model)
         path = save_result(eval_type, eval_id, run, domain, prompt, expected, actual, elapsed, fetched_urls)
         fetch_note = f"  [{len(fetched_urls)} fetched]" if fetched_urls else ""
         return f"  eval {eval_id:02d} run {run} → {path.relative_to(REPO_ROOT)}  ({elapsed:.1f}s){fetch_note}"
@@ -136,7 +143,7 @@ def _execute_one(eval_type: str, ev: dict, run: int, cwd: Path) -> str:
         return f"  eval {eval_id:02d} run {run} → ERROR: {e}"
 
 
-def run_eval_type(eval_type: str, cwd: Path, only_eval_id: int | None = None, num_runs: int = DEFAULT_NUM_RUNS, workers: int | None = None) -> None:
+def run_eval_type(eval_type: str, cwd: Path, only_eval_id: int | None = None, num_runs: int = DEFAULT_NUM_RUNS, workers: int | None = None, model: str | None = None) -> None:
     evals_path = EVALS_DIR / f"{eval_type}.json"
     if not evals_path.exists():
         print(f"  [skip] no evals at {evals_path}")
@@ -160,8 +167,9 @@ def run_eval_type(eval_type: str, cwd: Path, only_eval_id: int | None = None, nu
     total = len(evals) * num_runs
     if workers is None:
         workers = total
+    effective_model = model or DEFAULT_MODELS[eval_type]
     print(f"\n{'='*60}")
-    print(f"Eval type: {eval_type}  ({len(evals)} evals × {num_runs} runs = {total} calls, {workers} workers, max {DEFAULT_MAX_FETCHES} fetches/eval)")
+    print(f"Eval type: {eval_type}  ({len(evals)} evals × {num_runs} runs = {total} calls, {workers} workers, max {DEFAULT_MAX_FETCHES} fetches/eval, model: {effective_model})")
     print(f"{'='*60}")
 
     write_claude_md()
@@ -170,11 +178,11 @@ def run_eval_type(eval_type: str, cwd: Path, only_eval_id: int | None = None, nu
 
     if workers <= 1 or len(tasks) == 1:
         for ev, run in tasks:
-            print(_execute_one(eval_type, ev, run, cwd))
+            print(_execute_one(eval_type, ev, run, cwd, model=effective_model))
         return
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(_execute_one, eval_type, ev, run, cwd): (ev["id"], run) for ev, run in tasks}
+        futures = {pool.submit(_execute_one, eval_type, ev, run, cwd, effective_model): (ev["id"], run) for ev, run in tasks}
         for fut in as_completed(futures):
             print(fut.result(), flush=True)
 
@@ -208,6 +216,12 @@ def main():
         metavar="N",
         help="Concurrent claude subprocesses (default: all tasks; set to 1 to serialize)",
     )
+    parser.add_argument(
+        "--model",
+        default=None,
+        metavar="MODEL",
+        help=f"Model to use (default: {DEFAULT_MODELS['routing']} for routing, {DEFAULT_MODELS['synthesis']} for synthesis)",
+    )
     args = parser.parse_args()
 
     if args.runs < 1:
@@ -217,7 +231,7 @@ def main():
 
     scratch = Path(tempfile.mkdtemp(prefix="claude-eval-"))
     try:
-        run_eval_type(args.eval_type, scratch, args.eval_id, num_runs=args.runs, workers=args.workers)
+        run_eval_type(args.eval_type, scratch, args.eval_id, num_runs=args.runs, workers=args.workers, model=args.model)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
