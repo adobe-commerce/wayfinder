@@ -115,6 +115,7 @@ If filesystem access is not available, ask the user to share relevant files. For
 
 | If the user asks about… | Start here |
 | --- | --- |
+| content scheduling | [AEM / EDS](./docs/aem-eds.md) — content scheduling is an AEM feature, not a storefront feature, though historically it was managed by PaaS |
 | Code change pushed to repo but not showing on aem.live / hlx.live URL | [AEM / EDS](./docs/aem-eds.md) — this is an AEM Code Sync / CDN question, not a storefront question |
 | Local dev setup: npm install, how to start the dev server, AEM CLI, `aem up` | [AEM / EDS](./docs/aem-eds.md) — AEM CLI applies to all EDS sites including storefront |
 | Page edited in DA or repo not appearing on live site after publish | [AEM / EDS](./docs/aem-eds.md) — the publish/sync pipeline is EDS infrastructure; DA covers only DA-specific authoring steps |

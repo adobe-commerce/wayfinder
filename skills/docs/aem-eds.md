@@ -19,6 +19,7 @@ Verify current URL via the index if any fail:
 | --- | --- |
 | EDS project structure, Code Sync, CDN | `https://www.aem.live/developer/anatomy-of-a-project.md` |
 | Block markup, sections, and block patterns | `https://www.aem.live/developer/markup-sections-blocks.md` |
+| Content scheduling | `https://www.aem.live/developer/content-scheduling.md` |
 | Admin API (Storefront Configuration, content source, sync) | `https://www.aem.live/docs/admin.html` |
 | Custom headers | `https://www.aem.live/docs/custom-headers.md` |
 | Sidekick (preview/publish browser extension) | `https://www.aem.live/docs/sidekick.md` |
