@@ -5,6 +5,10 @@ Score eval results produced by run-evals.py.
 Reads each per-run result file (eval-NN-runM.md), sends (expected + actual)
 to claude for scoring, and prints a per-eval aggregate summary.
 
+Two independent scores per eval:
+  Synthesis — PASS/PARTIAL/FAIL: did the answer address the expected key points?
+  Routing   — ROUTED/PARTIAL/UNROUTED: did the response cite the expected source domains?
+
 Usage:
     python3 scripts/score-evals.py [skill_name]
     python3 scripts/score-evals.py commerce-storefront
@@ -21,6 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
+EVALS_DIR = REPO_ROOT / "evals"
 SKILL_NAMES = ["commerce-storefront", "commerce-backend", "commerce-da"]
 
 SCORING_PROMPT = """\
@@ -49,6 +54,11 @@ MISS: <comma-separated list of expected points that were missing or wrong>
 NOTE: <one sentence explaining the score, or "none">
 """
 
+URL_RE = re.compile(r"https?://[^\s\)\]\"'<>]+")
+
+SYNTH_GRADE = {"PASS": "✅", "PARTIAL": "⚠️", "FAIL": "❌", "ERROR": "?"}
+ROUTE_GRADE = {"ROUTED": "🔀", "PARTIAL": "⚡", "UNROUTED": "🚫", "N/A": "—"}
+
 
 def score_result(expected: str, actual: str) -> dict:
     prompt = SCORING_PROMPT.format(expected=expected, actual=actual)
@@ -72,6 +82,22 @@ def score_result(expected: str, actual: str) -> dict:
     return parsed
 
 
+def check_routing(expected_sources: list[str], actual: str) -> dict:
+    """Check whether expected source domains appear in URLs cited in the response."""
+    if not expected_sources:
+        return {"score": "N/A", "found": [], "missing": []}
+    urls = URL_RE.findall(actual)
+    found = [d for d in expected_sources if any(d in url for url in urls)]
+    missing = [d for d in expected_sources if d not in found]
+    if not missing:
+        score = "ROUTED"
+    elif found:
+        score = "PARTIAL"
+    else:
+        score = "UNROUTED"
+    return {"score": score, "found": found, "missing": missing}
+
+
 def extract_sections(content: str) -> tuple[str, str]:
     """Extract expected and actual sections from a result markdown file."""
     expected_match = re.search(r'\n## Expected key points\n\n(.*?)\n## Actual output', content, re.DOTALL)
@@ -92,55 +118,8 @@ def parse_eval_filename(name: str) -> tuple[int, int]:
     return -1, 0
 
 
-GRADE = {"PASS": "✅", "PARTIAL": "⚠️", "FAIL": "❌", "ERROR": "?"}
-
-
-def score_skill(skill_name: str) -> dict:
-    skill_results = RESULTS_DIR / skill_name
-    if not skill_results.exists():
-        print(f"  [skip] no results for {skill_name} — run run-evals.py first")
-        return {}
-
-    result_files = sorted(skill_results.glob("eval-*.md"))
-    if not result_files:
-        print(f"  [skip] no eval-*.md files in {skill_results}")
-        return {}
-
-    print(f"\n{'='*60}")
-    print(f"Scoring: {skill_name}  ({len(result_files)} result files)")
-    print(f"{'='*60}")
-
-    # Group result files by eval_id
-    by_eval = defaultdict(list)
-    for path in result_files:
-        eval_id, run = parse_eval_filename(path.stem)
-        by_eval[eval_id].append((run, path))
-
-    eval_results = {}
-    for eval_id in sorted(by_eval.keys()):
-        runs = sorted(by_eval[eval_id])
-        run_scores = []
-        for run, path in runs:
-            content = path.read_text()
-            expected, actual = extract_sections(content)
-            label = f"eval-{eval_id:02d}" + (f"-run{run}" if run else "")
-            print(f"  {label}...", end=" ", flush=True)
-            scored = score_result(expected, actual)
-            print(f"{GRADE.get(scored['score'], '?')} {scored['score']}")
-            if scored["miss"] and scored["miss"].lower() != "none":
-                # Indent miss for readability; truncate if very long
-                miss = scored["miss"]
-                if len(miss) > 200:
-                    miss = miss[:200] + "..."
-                print(f"    miss: {miss}")
-            run_scores.append(scored["score"])
-        eval_results[eval_id] = run_scores
-
-    return eval_results
-
-
-def aggregate(run_scores: list[str]) -> str:
-    """Majority vote; FAIL wins if there's a tie that includes FAIL."""
+def aggregate_synthesis(run_scores: list[str]) -> str:
+    """Majority vote; FAIL wins ties that include FAIL."""
     counts = {"PASS": 0, "PARTIAL": 0, "FAIL": 0, "ERROR": 0}
     for s in run_scores:
         counts[s] = counts.get(s, 0) + 1
@@ -154,22 +133,117 @@ def aggregate(run_scores: list[str]) -> str:
     return "PARTIAL"
 
 
-def print_summary(all_results: dict[str, dict[int, list[str]]]):
+def aggregate_routing(run_scores: list[str]) -> str:
+    """Majority vote for routing scores."""
+    if not run_scores or all(s == "N/A" for s in run_scores):
+        return "N/A"
+    counts: dict[str, int] = defaultdict(int)
+    for s in run_scores:
+        counts[s] += 1
+    n = len(run_scores)
+    if counts["ROUTED"] > n / 2:
+        return "ROUTED"
+    if counts["UNROUTED"] > n / 2:
+        return "UNROUTED"
+    return "PARTIAL"
+
+
+def load_expected_sources(skill_name: str) -> dict[int, list[str]]:
+    """Return {eval_id: [domain, ...]} from the eval JSON for this skill."""
+    evals_path = EVALS_DIR / f"{skill_name}.json"
+    if not evals_path.exists():
+        return {}
+    data = json.loads(evals_path.read_text())
+    return {ev["id"]: ev.get("expected_sources", []) for ev in data.get("evals", [])}
+
+
+def score_skill(skill_name: str) -> dict:
+    skill_results = RESULTS_DIR / skill_name
+    if not skill_results.exists():
+        print(f"  [skip] no results for {skill_name} — run run-evals.py first")
+        return {}
+
+    result_files = sorted(skill_results.glob("eval-*.md"))
+    if not result_files:
+        print(f"  [skip] no eval-*.md files in {skill_results}")
+        return {}
+
+    expected_sources_map = load_expected_sources(skill_name)
+
+    print(f"\n{'='*60}")
+    print(f"Scoring: {skill_name}  ({len(result_files)} result files)")
+    print(f"{'='*60}")
+
+    # Group result files by eval_id
+    by_eval: dict[int, list] = defaultdict(list)
+    for path in result_files:
+        eval_id, run = parse_eval_filename(path.stem)
+        by_eval[eval_id].append((run, path))
+
+    eval_results = {}
+    for eval_id in sorted(by_eval.keys()):
+        runs = sorted(by_eval[eval_id])
+        expected_sources = expected_sources_map.get(eval_id, [])
+        run_synth_scores = []
+        run_route_scores = []
+
+        for run, path in runs:
+            content = path.read_text()
+            expected, actual = extract_sections(content)
+            label = f"eval-{eval_id:02d}" + (f"-run{run}" if run else "")
+            print(f"  {label}...", end=" ", flush=True)
+            scored = score_result(expected, actual)
+            routed = check_routing(expected_sources, actual)
+            synth_emoji = SYNTH_GRADE.get(scored["score"], "?")
+            route_emoji = ROUTE_GRADE.get(routed["score"], "?")
+            print(f"{synth_emoji} {scored['score']}  {route_emoji} {routed['score']}")
+            if scored["miss"] and scored["miss"].lower() != "none":
+                miss = scored["miss"]
+                if len(miss) > 200:
+                    miss = miss[:200] + "..."
+                print(f"    miss: {miss}")
+            if routed["missing"]:
+                print(f"    not routed to: {', '.join(routed['missing'])}")
+            run_synth_scores.append(scored["score"])
+            run_route_scores.append(routed["score"])
+
+        eval_results[eval_id] = {
+            "synthesis": run_synth_scores,
+            "routing": run_route_scores,
+        }
+
+    return eval_results
+
+
+def print_summary(all_results: dict[str, dict[int, dict]]):
     if not all_results:
         return
     print(f"\n{'='*60}")
     print("SUMMARY (per-eval, with run-by-run consistency)")
     print(f"{'='*60}")
-    totals = {"PASS": 0, "PARTIAL": 0, "FAIL": 0}
+    synth_totals: dict[str, int] = {"PASS": 0, "PARTIAL": 0, "FAIL": 0}
+    route_totals: dict[str, int] = {"ROUTED": 0, "PARTIAL": 0, "UNROUTED": 0, "N/A": 0}
     for skill, eval_results in all_results.items():
-        for eval_id, runs in sorted(eval_results.items()):
-            grades_str = "".join(GRADE.get(s, "?") for s in runs)
-            agg = aggregate(runs)
-            agg_emoji = GRADE.get(agg, "?")
-            totals[agg] = totals.get(agg, 0) + 1
-            print(f"  {grades_str}  →  {agg_emoji} {skill}/eval-{eval_id:02d}")
-    total = sum(totals.values())
-    print(f"\n  Total evals: {total}  ✅ {totals.get('PASS', 0)}  ⚠️ {totals.get('PARTIAL', 0)}  ❌ {totals.get('FAIL', 0)}")
+        for eval_id, scores in sorted(eval_results.items()):
+            synth_runs = scores["synthesis"]
+            route_runs = scores["routing"]
+            grades_str = "".join(SYNTH_GRADE.get(s, "?") for s in synth_runs)
+            synth_agg = aggregate_synthesis(synth_runs)
+            route_agg = aggregate_routing(route_runs)
+            synth_emoji = SYNTH_GRADE.get(synth_agg, "?")
+            route_emoji = ROUTE_GRADE.get(route_agg, "?")
+            synth_totals[synth_agg] = synth_totals.get(synth_agg, 0) + 1
+            route_totals[route_agg] = route_totals.get(route_agg, 0) + 1
+            print(f"  {grades_str}  →  {synth_emoji} {synth_agg:<7}  {route_emoji} {route_agg:<10}  {skill}/eval-{eval_id:02d}")
+    total = sum(synth_totals.values())
+    print(f"\n  Synthesis ({total} evals): ✅ {synth_totals.get('PASS', 0)}  ⚠️ {synth_totals.get('PARTIAL', 0)}  ❌ {synth_totals.get('FAIL', 0)}")
+    routed = route_totals.get("ROUTED", 0)
+    partial = route_totals.get("PARTIAL", 0)
+    unrouted = route_totals.get("UNROUTED", 0)
+    na = route_totals.get("N/A", 0)
+    route_total = routed + partial + unrouted
+    na_note = f"  (+ {na} N/A)" if na else ""
+    print(f"  Routing   ({route_total} evals): 🔀 {routed} routed  ⚡ {partial} partial  🚫 {unrouted} unrouted{na_note}")
 
 
 def main():

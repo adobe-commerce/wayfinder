@@ -11,6 +11,7 @@ Guidance for AI agents working in Adobe Commerce repositories. Use this file to 
 2. **Read local code first.** If filesystem access is available, read relevant files before answering. Local code reflects current state and takes precedence over docs — but confirm it's up to date before treating it as authoritative. For storefront layout/DOM questions with no local code, fall back to the boilerplate reference repos.
 3. **Public sources only, no invented URLs.** Only cite URLs you retrieved in this session or that appear in this file or the per-source guide you loaded.
 4. **Cite sources.** Attribute claims to the doc URL used. If the answer isn't in the docs, say so and direct to official Adobe support — do not speculate.
+5. **Verify relevance after fetching.** After fetching each per-source guide or documentation page (not this file), confirm it contains what you need before citing it. If sub-agent spawning is available, spawn one with: "Does this document contain the information needed to answer this question: [insert the user's actual question here]? If yes, respond 'yes' and quote the specific strings that answer it, clearly delimited. If no, respond 'no'. Do not spawn further sub-agents." If the sub-agent responds 'no', skip that source and continue to the next. If sub-agent spawning is unavailable, perform this relevance check inline before citing.
 
 ## Documentation routing
 
