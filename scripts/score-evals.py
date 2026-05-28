@@ -12,9 +12,9 @@ Three independent scores per eval:
               (N/A when result file predates fetch tracking, or no expected_sources defined)
 
 Usage:
-    python3 scripts/score-evals.py [skill_name]
-    python3 scripts/score-evals.py commerce-storefront
-    python3 scripts/score-evals.py  # scores all
+    python3 scripts/score-evals.py           # scores routing results (default)
+    python3 scripts/score-evals.py routing
+    python3 scripts/score-evals.py synthesis
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from urllib.parse import urlparse
 REPO_ROOT = Path(__file__).parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
 EVALS_DIR = REPO_ROOT / "evals"
-SKILL_NAMES = ["commerce-storefront", "commerce-backend", "commerce-da"]
+EVAL_TYPES = ["routing", "synthesis"]
 
 SCORING_PROMPT = """\
 You are scoring a skill response against a rubric. Be strict and concise.
@@ -69,9 +69,9 @@ FETCH_GRADE = {"FETCHED": "🌐", "PARTIAL": "⚡", "UNFETCHED": "💭", "N/A": 
 def _domain_matches(domain: str, url: str) -> bool:
     """Return True if url's hostname equals or is a subdomain of domain."""
     try:
-        netloc = urlparse(url).netloc.lower().split(":")[0]  # strip port
+        host = (urlparse(url).hostname or "").lower()
         d = domain.lower()
-        return netloc == d or netloc.endswith("." + d)
+        return host == d or host.endswith("." + d)
     except Exception:
         return False
 
@@ -212,9 +212,9 @@ def aggregate_fetch(run_scores: list[str]) -> str:
     return "PARTIAL"
 
 
-def load_expected_sources(skill_name: str) -> dict[int, list[str]]:
-    """Return {eval_id: [domain, ...]} from the eval JSON for this skill."""
-    evals_path = EVALS_DIR / f"{skill_name}.json"
+def load_expected_sources(eval_type: str) -> dict[int, list[str]]:
+    """Return {eval_id: [domain, ...]} from the eval JSON for this type."""
+    evals_path = EVALS_DIR / f"{eval_type}.json"
     if not evals_path.exists():
         return {}
     data = json.loads(evals_path.read_text())
@@ -250,24 +250,24 @@ def _score_one(eval_id: int, run: int, path: Path, expected_sources: list[str]) 
     }, "\n".join(lines)
 
 
-def score_skill(skill_name: str, workers: int | None = None) -> dict:
-    skill_results = RESULTS_DIR / skill_name
-    if not skill_results.exists():
-        print(f"  [skip] no results for {skill_name} — run run-evals.py first")
+def score_eval_type(eval_type: str, workers: int | None = None) -> dict:
+    type_results = RESULTS_DIR / eval_type
+    if not type_results.exists():
+        print(f"  [skip] no results for {eval_type} — run run-evals.py first")
         return {}
 
-    result_files = sorted(skill_results.glob("eval-*.md"))
+    result_files = sorted(type_results.glob("eval-*.md"))
     if not result_files:
-        print(f"  [skip] no eval-*.md files in {skill_results}")
+        print(f"  [skip] no eval-*.md files in {type_results}")
         return {}
 
-    expected_sources_map = load_expected_sources(skill_name)
+    expected_sources_map = load_expected_sources(eval_type)
 
     if workers is None:
-        workers = max(1, (len(result_files) + 1) // 2)
+        workers = max(1, len(result_files))
 
     print(f"\n{'='*60}")
-    print(f"Scoring: {skill_name}  ({len(result_files)} result files, {workers} workers)")
+    print(f"Scoring: {eval_type}  ({len(result_files)} result files, {workers} workers)")
     print(f"{'='*60}")
 
     by_eval: dict[int, list] = defaultdict(list)
@@ -275,7 +275,6 @@ def score_skill(skill_name: str, workers: int | None = None) -> dict:
         eval_id, run = parse_eval_filename(path.stem)
         by_eval[eval_id].append((run, path))
 
-    # Flatten to a worklist; preserve eval_id ↔ runs grouping after scoring
     tasks = []
     for eval_id in sorted(by_eval.keys()):
         for run, path in sorted(by_eval[eval_id]):
@@ -284,19 +283,23 @@ def score_skill(skill_name: str, workers: int | None = None) -> dict:
     scored_runs: dict[int, list[dict]] = defaultdict(list)
     if workers <= 1:
         for eval_id, run, path, srcs in tasks:
-            eid, _, scores, status = _score_one(eval_id, run, path, srcs)
-            print(status, flush=True)
-            scored_runs[eid].append(scores)
+            try:
+                eid, _, scores, status = _score_one(eval_id, run, path, srcs)
+                print(status, flush=True)
+                scored_runs[eid].append(scores)
+            except Exception as exc:
+                print(f"  [scoring error] eval-{eval_id:02d}-run{run}: {exc}", flush=True)
     else:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [pool.submit(_score_one, eid, run, path, srcs) for eid, run, path, srcs in tasks]
-            from concurrent.futures import as_completed
             for fut in as_completed(futures):
-                eid, run, scores, status = fut.result()
-                print(status, flush=True)
-                scored_runs[eid].append((run, scores))
+                try:
+                    eid, run, scores, status = fut.result()
+                    print(status, flush=True)
+                    scored_runs[eid].append((run, scores))
+                except Exception as exc:
+                    print(f"  [scoring error] {exc}", flush=True)
 
-        # Sort runs within each eval to keep aggregation deterministic
         for eid in scored_runs:
             scored_runs[eid] = [s for _, s in sorted(scored_runs[eid])]
 
@@ -356,30 +359,27 @@ def print_summary(all_results: dict[str, dict[int, dict]]):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Score eval results produced by run-evals.py")
-    parser.add_argument("skill", nargs="?", help=f"Skill name (default: all). Choices: {', '.join(SKILL_NAMES)}")
+    parser.add_argument(
+        "eval_type",
+        nargs="?",
+        default="routing",
+        choices=EVAL_TYPES,
+        help=f"Eval set to score (default: routing). Choices: {', '.join(EVAL_TYPES)}",
+    )
     parser.add_argument(
         "--workers",
         type=int,
         default=None,
         metavar="N",
-        help="Concurrent claude scoring subprocesses (default: half the per-skill result count; set to 1 to serialize)",
+        help="Concurrent claude scoring subprocesses (default: all result files; set to 1 to serialize)",
     )
     args = parser.parse_args()
 
     if args.workers is not None and args.workers < 1:
         parser.error("--workers must be at least 1")
 
-    skills = [args.skill] if args.skill else SKILL_NAMES
-
-    all_results = {}
-    for skill in skills:
-        if skill not in SKILL_NAMES:
-            print(f"Unknown skill: {skill}. Choose from: {', '.join(SKILL_NAMES)}")
-            sys.exit(1)
-        result = score_skill(skill, workers=args.workers)
-        if result:
-            all_results[skill] = result
-
+    result = score_eval_type(args.eval_type, workers=args.workers)
+    all_results = {args.eval_type: result} if result else {}
     print_summary(all_results)
 
 

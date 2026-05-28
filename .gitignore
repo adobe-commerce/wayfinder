@@ -10,3 +10,7 @@
 **/benchmark.md
 **/feedback.json
 results/*
+results-archive/
+
+# Agent handoff docs (local session artifacts)
+docs/agents/handoff/

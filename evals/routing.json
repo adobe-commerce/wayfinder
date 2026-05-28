@@ -1,0 +1,125 @@
+{
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I pushed a change to my storefront repo but the update isn't showing on my aem.live URL. It's been 10 minutes. What's wrong?",
+      "expected_output": "Should cover: (1) Verify AEM Code Sync GitHub App is installed on the repo. (2) File paths on CDN are case-sensitive. (3) Check sync status via AEM Admin API. (4) Force re-sync options: Admin API POST, trivial commit to trigger webhook, or PR checkbox. Should reference aem.live docs for Admin API authentication details.",
+      "expected_sources": [
+        "aem.live"
+      ],
+      "files": [],
+      "domain": "commerce-storefront"
+    },
+    {
+      "id": 1,
+      "prompt": "I've just cloned the storefront boilerplate repo and want to run it locally. What do I need to install and what command starts the local dev server?",
+      "expected_output": "Should cover the documented local dev setup: (1) run `npm install` to install project dependencies including drop-in packages into scripts/__dropins__/; (2) install the AEM CLI globally (npm install -g @adobe/aem-cli or equivalent); (3) run `aem up` to start the local proxy server which proxies content from the connected aem.page preview origin. Should explain that the local dev server proxies content (DA pages, Sidekick-previewed content) from the EDS CDN — it does not run a local CMS. Should note that changes to JS/CSS files are served locally while content comes from the connected DA site. Should fetch from the AEM/EDS developer docs and/or the boilerplate README before naming specific CLI commands or package names. Must not invent command flags or package scopes.",
+      "expected_sources": [
+        "aem.live"
+      ],
+      "files": [],
+      "domain": "commerce-storefront"
+    },
+    {
+      "id": 2,
+      "prompt": "I want to add a custom warranty_info field from my product catalog to the PDP. The attribute exists in Adobe Commerce. How do I get it to show up in the drop-in?",
+      "expected_output": "Should explain overrideGQLOperations in build.mjs as the correct approach — add the field to the ProductDetailsFragment. Should note prerequisites: 'Use in GraphQL' must be enabled on the attribute in Adobe Commerce admin, and if using ACO/Catalog Service it must also be synced via SaaS data export. Should explain that after modifying build.mjs, npm install must be re-run.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-storefront"
+    },
+    {
+      "id": 3,
+      "prompt": "I'm getting CORS errors in the browser console when my storefront tries to call my Adobe Commerce backend. The error references my .aem.live domain being blocked. How do I fix this?",
+      "expected_output": "Should clearly explain that CORS must be configured on the Adobe Commerce backend side — the EDS/storefront side has no CORS to configure. Should explain that the Commerce backend needs to allow origins including *.aem.live, *.aem.page, and the production custom domain. Should distinguish configuration paths for ACCS vs PaaS: PaaS configuration is typically in .htaccess or Nginx config depending on the cloud tier, while ACCS may have different admin-surface config. Should note that CORS failures on authentication requests have downstream effects — they can manifest as $0 prices, guest-only checkout, or personalization not working because auth tokens cannot be obtained. Should fetch from both Storefront troubleshooting docs and ExL Commerce docs for the backend CORS configuration steps. Must not invent specific config directives or Admin paths — fetch documentation to confirm.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-storefront"
+    },
+    {
+      "id": 4,
+      "prompt": "What is the difference between Adobe Commerce Cloud Service (ACCS) and Adobe Commerce Optimizer (ACO)? Which one do I need for an EDS storefront?",
+      "expected_output": "Should clearly distinguish: ACCS is the managed Adobe Commerce backend (handles transactions — cart, checkout, orders, B2B, customers). ACO is the catalog/merchandising layer (handles catalog data, search, pricing, recommendations via Catalog Service). For an EDS storefront both are typically used together — ACO as the commerce-endpoint for catalog, ACCS as the commerce-core-endpoint for transactions. Should direct to ExL Commerce docs for current setup details.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-backend"
+    },
+    {
+      "id": 5,
+      "prompt": "I'm running Adobe Commerce on Cloud (PaaS). Do I still need Adobe Commerce Optimizer, or can my EDS storefront connect directly to my PaaS instance?",
+      "expected_output": "Should explain that an EDS storefront can connect to a PaaS Adobe Commerce instance directly (commerce-core-endpoint) for transactions. ACO is optional but recommended for catalog/search performance at scale — it provides Catalog Service (faster catalog reads, pricing, recommendations). Without ACO, the storefront falls back to using the PaaS GraphQL for everything including catalog. Should fetch from relevant ExL Commerce docs for current guidance on PaaS + EDS integration.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-backend"
+    },
+    {
+      "id": 6,
+      "prompt": "I need to configure CORS on my Adobe Commerce backend to allow requests from my EDS storefront domains. How do I do this?",
+      "expected_output": "Should explain that CORS must be configured on the Adobe Commerce (ACCS or PaaS) side to allow origins like *.aem.live and *.aem.page. Should cover where CORS is configured (environment config, .htaccess, or Nginx depending on deployment). Should note that missing CORS will cause authentication requests from the EDS storefront to fail, which can have downstream effects on personalized pricing and checkout. Should fetch from relevant admin/cloud docs for specific configuration steps.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-backend"
+    },
+    {
+      "id": 7,
+      "prompt": "I have Adobe Commerce on Cloud (PaaS) and I want to feed my catalog data into Adobe Commerce Optimizer. How do I set up the Optimizer Connector?",
+      "expected_output": "Should explain the ACO Optimizer Connector as the bridge between a PaaS Adobe Commerce instance and Adobe Commerce Optimizer — it syncs catalog, pricing, and inventory data from PaaS to ACO via the SaaS data export pipeline. Should cover: installing the connector module (Composer), configuring the SaaS data export extension with Commerce API keys, and confirming the sync is active. Should note that the Optimizer Connector is separate from a direct PaaS storefront integration — it specifically feeds ACO's catalog layer. Should fetch from the ACO Optimizer Connector docs at experienceleague.adobe.com/en/docs/commerce/aco-optimizer-connector/overview. Must not invent module names or config keys — any specific values cited must come from fetched documentation.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-backend"
+    },
+    {
+      "id": 8,
+      "prompt": "We're starting a new project and I need to create a DA organization and site, then connect it to our EDS code repo. What are the steps?",
+      "expected_output": "Should cover the full setup flow: (1) creating a DA org at admin.da.live (requires Adobe IMS login and org creation); (2) creating a DA site within the org; (3) updating fstab.yaml in the EDS code repo to set the mountpoint to the DA site URL so EDS fetches content from DA; (4) installing the AEM Code Sync GitHub App on the code repo if not already present. Should explain that the mountpoint in fstab.yaml is the root of where DA content is served and must match the DA site URL format. Should fetch from both DA docs (docs.da.live) and AEM/EDS docs (aem.live) for current setup steps. Must not invent fstab.yaml syntax or DA admin UI paths — fetch documentation to confirm.",
+      "expected_sources": [
+        "docs.da.live",
+        "aem.live"
+      ],
+      "files": [],
+      "domain": "commerce-da"
+    },
+    {
+      "id": 9,
+      "prompt": "How do I add a product recommendations block to a content page? I want it to show 'Most Viewed' products.",
+      "expected_output": "Should explain that blocks are added in DA as tables with the block name in the first cell and configuration rows below. For product recommendations specifically: the DA table structure with recId (the recommendation ID from ACO) and optionally currentSku for context-aware types. Should note Most Viewed is a recommendation type configured in ACO, not a DA setting. Should fetch from the Storefront or authoring documentation for current Commerce-specific block authoring details.",
+      "expected_sources": [
+        "experienceleague.adobe.com"
+      ],
+      "files": [],
+      "domain": "commerce-da"
+    },
+    {
+      "id": 10,
+      "prompt": "I edited a page in DA but the changes aren't showing on my live site. I can see the updates on the preview URL (aem.page) but not on the live URL (aem.live).",
+      "expected_output": "Should explain the two-step workflow: Preview (aem.page) and Publish (aem.live) are separate steps. The user has previewed but not published. Should explain how to publish using the Sidekick extension (Publish button) or the AEM Admin API. Should fetch from the DA or AEM documentation for the current Sidekick publish workflow.",
+      "expected_sources": [
+        "aem.live"
+      ],
+      "files": [],
+      "domain": "commerce-da"
+    },
+    {
+      "id": 11,
+      "prompt": "How do I update the navigation on my EDS storefront? Where is it managed?",
+      "expected_output": "Should explain that navigation is typically as a content document (nav.md or similar) at a specific path in the DA site, and that the code repo renders it via auto-blocking. Should explain the preview/publish workflow for content updates. Should advise checking the user's existing DA site structure and the auto-blocking code in their code repo to understand how their specific navigation is wired up.",
+      "expected_sources": [
+        "aem.live"
+      ],
+      "files": [],
+      "domain": "commerce-da"
+    }
+  ]
+}
