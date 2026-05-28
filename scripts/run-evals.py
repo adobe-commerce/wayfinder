@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -110,7 +111,23 @@ def save_result(domain, eval_id, run, prompt, expected, actual, elapsed, fetched
     return path
 
 
-def run_domain(domain, cwd: Path, only_eval_id=None, num_runs=DEFAULT_NUM_RUNS):
+def _execute_one(domain, ev, run, cwd: Path) -> str:
+    """Run one (eval, run) and return a status line to print."""
+    eval_id = ev["id"]
+    prompt = ev["prompt"]
+    expected = ev["expected_output"]
+    try:
+        actual, fetched_urls, elapsed = run_eval(prompt, cwd)
+        path = save_result(domain, eval_id, run, prompt, expected, actual, elapsed, fetched_urls)
+        fetch_note = f"  [{len(fetched_urls)} fetched]" if fetched_urls else ""
+        return f"  eval {eval_id:02d} run {run} → {path.relative_to(REPO_ROOT)}  ({elapsed:.1f}s){fetch_note}"
+    except subprocess.TimeoutExpired:
+        return f"  eval {eval_id:02d} run {run} → TIMEOUT after 300s"
+    except Exception as e:
+        return f"  eval {eval_id:02d} run {run} → ERROR: {e}"
+
+
+def run_domain(domain, cwd: Path, only_eval_id=None, num_runs=DEFAULT_NUM_RUNS, workers=None):
     evals_path = EVALS_DIR / f"{domain}.json"
     if not evals_path.exists():
         print(f"  [skip] no evals at {evals_path}")
@@ -134,28 +151,27 @@ def run_domain(domain, cwd: Path, only_eval_id=None, num_runs=DEFAULT_NUM_RUNS):
             f.unlink()
 
     total = len(evals) * num_runs
+    if workers is None:
+        # Default: half the number of tasks (rounded up), so commerce-storefront's 14 evals
+        # gets 7 workers, commerce-backend's 11 gets 6, etc. Scales with the eval set.
+        workers = max(1, (total + 1) // 2)
     print(f"\n{'='*60}")
-    print(f"Domain: {domain}  ({len(evals)} evals × {num_runs} runs = {total} calls)")
+    print(f"Domain: {domain}  ({len(evals)} evals × {num_runs} runs = {total} calls, {workers} workers)")
     print(f"{'='*60}")
 
     write_claude_md()
 
-    for ev in evals:
-        eval_id = ev["id"]
-        prompt = ev["prompt"]
-        expected = ev["expected_output"]
+    tasks = [(ev, run) for ev in evals for run in range(1, num_runs + 1)]
 
-        for run in range(1, num_runs + 1):
-            print(f"  eval {eval_id:02d} run {run}: {prompt[:55]}...")
-            try:
-                actual, fetched_urls, elapsed = run_eval(prompt, cwd)
-                path = save_result(domain, eval_id, run, prompt, expected, actual, elapsed, fetched_urls)
-                fetch_note = f"  [{len(fetched_urls)} fetched]" if fetched_urls else ""
-                print(f"    → {path.relative_to(REPO_ROOT)}  ({elapsed:.1f}s){fetch_note}")
-            except subprocess.TimeoutExpired:
-                print(f"    → TIMEOUT after 300s")
-            except Exception as e:
-                print(f"    → ERROR: {e}")
+    if workers <= 1 or len(tasks) == 1:
+        for ev, run in tasks:
+            print(_execute_one(domain, ev, run, cwd))
+        return
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(_execute_one, domain, ev, run, cwd): (ev["id"], run) for ev, run in tasks}
+        for fut in as_completed(futures):
+            print(fut.result(), flush=True)
 
 
 def main():
@@ -178,10 +194,19 @@ def main():
         metavar="N",
         help=f"Runs per eval (default: {DEFAULT_NUM_RUNS}; use 3 when debugging variance)",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Concurrent claude subprocesses per domain (default: half the per-domain task count; set to 1 to serialize)",
+    )
     args = parser.parse_args()
 
     if args.runs < 1:
         parser.error("--runs must be at least 1")
+    if args.workers is not None and args.workers < 1:
+        parser.error("--workers must be at least 1")
 
     domains = [args.domain] if args.domain else DOMAIN_NAMES
 
@@ -191,7 +216,7 @@ def main():
             if domain not in DOMAIN_NAMES:
                 print(f"Unknown domain: {domain}. Choose from: {', '.join(DOMAIN_NAMES)}")
                 sys.exit(1)
-            run_domain(domain, scratch, args.eval_id, num_runs=args.runs)
+            run_domain(domain, scratch, args.eval_id, num_runs=args.runs, workers=args.workers)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 

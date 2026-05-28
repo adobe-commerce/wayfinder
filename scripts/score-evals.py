@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -220,7 +221,36 @@ def load_expected_sources(skill_name: str) -> dict[int, list[str]]:
     return {ev["id"]: ev.get("expected_sources", []) for ev in data.get("evals", [])}
 
 
-def score_skill(skill_name: str) -> dict:
+def _score_one(eval_id: int, run: int, path: Path, expected_sources: list[str]) -> tuple[int, int, dict, str]:
+    """Score one result file. Returns (eval_id, run, score_dict, status_line)."""
+    content = path.read_text()
+    expected, actual = extract_sections(content)
+    fetched_urls = extract_fetched_urls(content)
+    label = f"eval-{eval_id:02d}" + (f"-run{run}" if run else "")
+    scored = score_result(expected, actual)
+    routed = check_routing(expected_sources, actual)
+    fetched = check_fetch_routing(expected_sources, fetched_urls)
+    synth_emoji = SYNTH_GRADE.get(scored["score"], "?")
+    route_emoji = ROUTE_GRADE.get(routed["score"], "?")
+    fetch_emoji = FETCH_GRADE.get(fetched["score"], "?")
+    lines = [f"  {label}... {synth_emoji} {scored['score']}  {route_emoji} {routed['score']}  {fetch_emoji} {fetched['score']}"]
+    if scored["miss"] and scored["miss"].lower() != "none":
+        miss = scored["miss"]
+        if len(miss) > 200:
+            miss = miss[:200] + "..."
+        lines.append(f"    miss: {miss}")
+    if routed["missing"]:
+        lines.append(f"    not cited: {', '.join(routed['missing'])}")
+    if fetched["missing"]:
+        lines.append(f"    not fetched: {', '.join(fetched['missing'])}")
+    return eval_id, run, {
+        "synth": scored["score"],
+        "route": routed["score"],
+        "fetch": fetched["score"],
+    }, "\n".join(lines)
+
+
+def score_skill(skill_name: str, workers: int | None = None) -> dict:
     skill_results = RESULTS_DIR / skill_name
     if not skill_results.exists():
         print(f"  [skip] no results for {skill_name} — run run-evals.py first")
@@ -233,8 +263,11 @@ def score_skill(skill_name: str) -> dict:
 
     expected_sources_map = load_expected_sources(skill_name)
 
+    if workers is None:
+        workers = max(1, (len(result_files) + 1) // 2)
+
     print(f"\n{'='*60}")
-    print(f"Scoring: {skill_name}  ({len(result_files)} result files)")
+    print(f"Scoring: {skill_name}  ({len(result_files)} result files, {workers} workers)")
     print(f"{'='*60}")
 
     by_eval: dict[int, list] = defaultdict(list)
@@ -242,44 +275,38 @@ def score_skill(skill_name: str) -> dict:
         eval_id, run = parse_eval_filename(path.stem)
         by_eval[eval_id].append((run, path))
 
-    eval_results = {}
+    # Flatten to a worklist; preserve eval_id ↔ runs grouping after scoring
+    tasks = []
     for eval_id in sorted(by_eval.keys()):
-        runs = sorted(by_eval[eval_id])
-        expected_sources = expected_sources_map.get(eval_id, [])
-        run_synth_scores = []
-        run_route_scores = []
-        run_fetch_scores = []
+        for run, path in sorted(by_eval[eval_id]):
+            tasks.append((eval_id, run, path, expected_sources_map.get(eval_id, [])))
 
-        for run, path in runs:
-            content = path.read_text()
-            expected, actual = extract_sections(content)
-            fetched_urls = extract_fetched_urls(content)
-            label = f"eval-{eval_id:02d}" + (f"-run{run}" if run else "")
-            print(f"  {label}...", end=" ", flush=True)
-            scored = score_result(expected, actual)
-            routed = check_routing(expected_sources, actual)
-            fetched = check_fetch_routing(expected_sources, fetched_urls)
-            synth_emoji = SYNTH_GRADE.get(scored["score"], "?")
-            route_emoji = ROUTE_GRADE.get(routed["score"], "?")
-            fetch_emoji = FETCH_GRADE.get(fetched["score"], "?")
-            print(f"{synth_emoji} {scored['score']}  {route_emoji} {routed['score']}  {fetch_emoji} {fetched['score']}")
-            if scored["miss"] and scored["miss"].lower() != "none":
-                miss = scored["miss"]
-                if len(miss) > 200:
-                    miss = miss[:200] + "..."
-                print(f"    miss: {miss}")
-            if routed["missing"]:
-                print(f"    not cited: {', '.join(routed['missing'])}")
-            if fetched["missing"]:
-                print(f"    not fetched: {', '.join(fetched['missing'])}")
-            run_synth_scores.append(scored["score"])
-            run_route_scores.append(routed["score"])
-            run_fetch_scores.append(fetched["score"])
+    scored_runs: dict[int, list[dict]] = defaultdict(list)
+    if workers <= 1:
+        for eval_id, run, path, srcs in tasks:
+            eid, _, scores, status = _score_one(eval_id, run, path, srcs)
+            print(status, flush=True)
+            scored_runs[eid].append(scores)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(_score_one, eid, run, path, srcs) for eid, run, path, srcs in tasks]
+            from concurrent.futures import as_completed
+            for fut in as_completed(futures):
+                eid, run, scores, status = fut.result()
+                print(status, flush=True)
+                scored_runs[eid].append((run, scores))
 
+        # Sort runs within each eval to keep aggregation deterministic
+        for eid in scored_runs:
+            scored_runs[eid] = [s for _, s in sorted(scored_runs[eid])]
+
+    eval_results = {}
+    for eval_id in sorted(scored_runs.keys()):
+        runs = scored_runs[eval_id]
         eval_results[eval_id] = {
-            "synthesis": run_synth_scores,
-            "routing": run_route_scores,
-            "fetch": run_fetch_scores,
+            "synthesis": [r["synth"] for r in runs],
+            "routing": [r["route"] for r in runs],
+            "fetch": [r["fetch"] for r in runs],
         }
 
     return eval_results
@@ -327,15 +354,29 @@ def print_summary(all_results: dict[str, dict[int, dict]]):
 
 
 def main():
-    target = sys.argv[1] if len(sys.argv) > 1 else None
-    skills = [target] if target else SKILL_NAMES
+    import argparse
+    parser = argparse.ArgumentParser(description="Score eval results produced by run-evals.py")
+    parser.add_argument("skill", nargs="?", help=f"Skill name (default: all). Choices: {', '.join(SKILL_NAMES)}")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Concurrent claude scoring subprocesses (default: half the per-skill result count; set to 1 to serialize)",
+    )
+    args = parser.parse_args()
+
+    if args.workers is not None and args.workers < 1:
+        parser.error("--workers must be at least 1")
+
+    skills = [args.skill] if args.skill else SKILL_NAMES
 
     all_results = {}
     for skill in skills:
         if skill not in SKILL_NAMES:
             print(f"Unknown skill: {skill}. Choose from: {', '.join(SKILL_NAMES)}")
             sys.exit(1)
-        result = score_skill(skill)
+        result = score_skill(skill, workers=args.workers)
         if result:
             all_results[skill] = result
 
