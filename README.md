@@ -62,11 +62,13 @@ alias claude-ext 'CLAUDE_CONFIG_DIR=~/.claude-external claude'
 Without these, the agent falls back to training data instead of fetching live docs.
 
 **3. Run evals:**
+
 ```sh
-python3 scripts/run-evals.py                                 # all domains
-python3 scripts/run-evals.py commerce-storefront             # one domain
-python3 scripts/run-evals.py commerce-storefront 6           # single eval
-python3 scripts/run-evals.py --runs 3 commerce-storefront 6  # variance testing
+python3 scripts/run-evals.py                    # full routing suite (default)
+python3 scripts/run-evals.py routing            # same; full routing suite
+python3 scripts/run-evals.py synthesis          # full synthesis suite
+python3 scripts/run-evals.py routing 4          # single eval by type/id
+python3 scripts/run-evals.py --runs 3 routing   # 3 runs per eval (variance testing)
 ```
 
 Results are written to `results/<domain>/eval-NN-runN.md` — each file has the prompt, expected key points, actual output, and elapsed time.
