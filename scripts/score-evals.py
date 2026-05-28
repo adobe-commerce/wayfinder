@@ -5,9 +5,11 @@ Score eval results produced by run-evals.py.
 Reads each per-run result file (eval-NN-runM.md), sends (expected + actual)
 to claude for scoring, and prints a per-eval aggregate summary.
 
-Two independent scores per eval:
-  Synthesis — PASS/PARTIAL/FAIL: did the answer address the expected key points?
-  Routing   — ROUTED/PARTIAL/UNROUTED: did the response cite the expected source domains?
+Three independent scores per eval:
+  Synthesis — PASS/PARTIAL/FAIL/ERROR: did the answer address the expected key points?
+  Citation  — ROUTED/PARTIAL/UNROUTED: did the response cite the expected source domains?
+  Fetch     — FETCHED/PARTIAL/UNFETCHED: did the agent actually call WebFetch for those domains?
+              (N/A when result file predates fetch tracking, or no expected_sources defined)
 
 Usage:
     python3 scripts/score-evals.py [skill_name]
@@ -15,13 +17,15 @@ Usage:
     python3 scripts/score-evals.py  # scores all
 """
 
+from __future__ import annotations
+
 import json
-import os
 import re
 import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
@@ -56,8 +60,19 @@ NOTE: <one sentence explaining the score, or "none">
 
 URL_RE = re.compile(r"https?://[^\s\)\]\"'<>]+")
 
-SYNTH_GRADE = {"PASS": "✅", "PARTIAL": "⚠️", "FAIL": "❌", "ERROR": "?"}
+SYNTH_GRADE = {"PASS": "✅", "PARTIAL": "⚠️", "FAIL": "❌", "ERROR": "💥"}
 ROUTE_GRADE = {"ROUTED": "🔀", "PARTIAL": "⚡", "UNROUTED": "🚫", "N/A": "—"}
+FETCH_GRADE = {"FETCHED": "🌐", "PARTIAL": "⚡", "UNFETCHED": "💭", "N/A": "—"}
+
+
+def _domain_matches(domain: str, url: str) -> bool:
+    """Return True if url's hostname equals or is a subdomain of domain."""
+    try:
+        netloc = urlparse(url).netloc.lower().split(":")[0]  # strip port
+        d = domain.lower()
+        return netloc == d or netloc.endswith("." + d)
+    except Exception:
+        return False
 
 
 def score_result(expected: str, actual: str) -> dict:
@@ -86,8 +101,11 @@ def check_routing(expected_sources: list[str], actual: str) -> dict:
     """Check whether expected source domains appear in URLs cited in the response."""
     if not expected_sources:
         return {"score": "N/A", "found": [], "missing": []}
+    if not actual:
+        # Empty actual (malformed file) — score as N/A, not UNROUTED
+        return {"score": "N/A", "found": [], "missing": []}
     urls = URL_RE.findall(actual)
-    found = [d for d in expected_sources if any(d in url for url in urls)]
+    found = [d for d in expected_sources if any(_domain_matches(d, url) for url in urls)]
     missing = [d for d in expected_sources if d not in found]
     if not missing:
         score = "ROUTED"
@@ -98,13 +116,37 @@ def check_routing(expected_sources: list[str], actual: str) -> dict:
     return {"score": score, "found": found, "missing": missing}
 
 
+def check_fetch_routing(expected_sources: list[str], fetched_urls: list[str] | None) -> dict:
+    """Check whether expected source domains were actually fetched via WebFetch."""
+    if not expected_sources or fetched_urls is None:
+        # None means no fetch data in this result file (old format)
+        return {"score": "N/A", "found": [], "missing": []}
+    found = [d for d in expected_sources if any(_domain_matches(d, url) for url in fetched_urls)]
+    missing = [d for d in expected_sources if d not in found]
+    if not missing:
+        score = "FETCHED"
+    elif found:
+        score = "PARTIAL"
+    else:
+        score = "UNFETCHED"
+    return {"score": score, "found": found, "missing": missing}
+
+
 def extract_sections(content: str) -> tuple[str, str]:
     """Extract expected and actual sections from a result markdown file."""
     expected_match = re.search(r'\n## Expected key points\n\n(.*?)\n## Actual output', content, re.DOTALL)
-    actual_match = re.search(r'\n## Actual output\n\n(.*?)$', content, re.DOTALL)
+    actual_match = re.search(r'\n## Actual output\n\n(.*?)(?:\n## Fetched URLs\n|\Z)', content, re.DOTALL)
     expected = expected_match.group(1).strip() if expected_match else ""
     actual = actual_match.group(1).strip() if actual_match else ""
     return expected, actual
+
+
+def extract_fetched_urls(content: str) -> list[str] | None:
+    """Return fetched URLs from the result file, or None if the section is absent (old format)."""
+    m = re.search(r'\n## Fetched URLs\n\n(.*?)$', content, re.DOTALL)
+    if m is None:
+        return None
+    return URL_RE.findall(m.group(1))
 
 
 def parse_eval_filename(name: str) -> tuple[int, int]:
@@ -119,11 +161,15 @@ def parse_eval_filename(name: str) -> tuple[int, int]:
 
 
 def aggregate_synthesis(run_scores: list[str]) -> str:
-    """Majority vote; FAIL wins ties that include FAIL."""
+    """Majority vote; FAIL wins ties that include FAIL. All-ERROR surfaces as ERROR."""
     counts = {"PASS": 0, "PARTIAL": 0, "FAIL": 0, "ERROR": 0}
     for s in run_scores:
         counts[s] = counts.get(s, 0) + 1
-    n = len(run_scores)
+    # Exclude ERROR runs from the vote; surface ERROR only when all runs failed
+    valid = [s for s in run_scores if s != "ERROR"]
+    if not valid:
+        return "ERROR"
+    n = len(valid)
     if counts["PASS"] > n / 2:
         return "PASS"
     if counts["FAIL"] > n / 2:
@@ -134,17 +180,34 @@ def aggregate_synthesis(run_scores: list[str]) -> str:
 
 
 def aggregate_routing(run_scores: list[str]) -> str:
-    """Majority vote for routing scores."""
+    """Majority vote for routing scores; N/A runs are excluded from the denominator."""
     if not run_scores or all(s == "N/A" for s in run_scores):
         return "N/A"
+    valid = [s for s in run_scores if s != "N/A"]
+    n = len(valid)
     counts: dict[str, int] = defaultdict(int)
-    for s in run_scores:
+    for s in valid:
         counts[s] += 1
-    n = len(run_scores)
     if counts["ROUTED"] > n / 2:
         return "ROUTED"
     if counts["UNROUTED"] > n / 2:
         return "UNROUTED"
+    return "PARTIAL"
+
+
+def aggregate_fetch(run_scores: list[str]) -> str:
+    """Majority vote for fetch scores; N/A runs are excluded from the denominator."""
+    if not run_scores or all(s == "N/A" for s in run_scores):
+        return "N/A"
+    valid = [s for s in run_scores if s != "N/A"]
+    n = len(valid)
+    counts: dict[str, int] = defaultdict(int)
+    for s in valid:
+        counts[s] += 1
+    if counts["FETCHED"] > n / 2:
+        return "FETCHED"
+    if counts["UNFETCHED"] > n / 2:
+        return "UNFETCHED"
     return "PARTIAL"
 
 
@@ -174,7 +237,6 @@ def score_skill(skill_name: str) -> dict:
     print(f"Scoring: {skill_name}  ({len(result_files)} result files)")
     print(f"{'='*60}")
 
-    # Group result files by eval_id
     by_eval: dict[int, list] = defaultdict(list)
     for path in result_files:
         eval_id, run = parse_eval_filename(path.stem)
@@ -186,30 +248,38 @@ def score_skill(skill_name: str) -> dict:
         expected_sources = expected_sources_map.get(eval_id, [])
         run_synth_scores = []
         run_route_scores = []
+        run_fetch_scores = []
 
         for run, path in runs:
             content = path.read_text()
             expected, actual = extract_sections(content)
+            fetched_urls = extract_fetched_urls(content)
             label = f"eval-{eval_id:02d}" + (f"-run{run}" if run else "")
             print(f"  {label}...", end=" ", flush=True)
             scored = score_result(expected, actual)
             routed = check_routing(expected_sources, actual)
+            fetched = check_fetch_routing(expected_sources, fetched_urls)
             synth_emoji = SYNTH_GRADE.get(scored["score"], "?")
             route_emoji = ROUTE_GRADE.get(routed["score"], "?")
-            print(f"{synth_emoji} {scored['score']}  {route_emoji} {routed['score']}")
+            fetch_emoji = FETCH_GRADE.get(fetched["score"], "?")
+            print(f"{synth_emoji} {scored['score']}  {route_emoji} {routed['score']}  {fetch_emoji} {fetched['score']}")
             if scored["miss"] and scored["miss"].lower() != "none":
                 miss = scored["miss"]
                 if len(miss) > 200:
                     miss = miss[:200] + "..."
                 print(f"    miss: {miss}")
             if routed["missing"]:
-                print(f"    not routed to: {', '.join(routed['missing'])}")
+                print(f"    not cited: {', '.join(routed['missing'])}")
+            if fetched["missing"]:
+                print(f"    not fetched: {', '.join(fetched['missing'])}")
             run_synth_scores.append(scored["score"])
             run_route_scores.append(routed["score"])
+            run_fetch_scores.append(fetched["score"])
 
         eval_results[eval_id] = {
             "synthesis": run_synth_scores,
             "routing": run_route_scores,
+            "fetch": run_fetch_scores,
         }
 
     return eval_results
@@ -221,29 +291,39 @@ def print_summary(all_results: dict[str, dict[int, dict]]):
     print(f"\n{'='*60}")
     print("SUMMARY (per-eval, with run-by-run consistency)")
     print(f"{'='*60}")
-    synth_totals: dict[str, int] = {"PASS": 0, "PARTIAL": 0, "FAIL": 0}
+    synth_totals: dict[str, int] = {"PASS": 0, "PARTIAL": 0, "FAIL": 0, "ERROR": 0}
     route_totals: dict[str, int] = {"ROUTED": 0, "PARTIAL": 0, "UNROUTED": 0, "N/A": 0}
+    fetch_totals: dict[str, int] = {"FETCHED": 0, "PARTIAL": 0, "UNFETCHED": 0, "N/A": 0}
     for skill, eval_results in all_results.items():
         for eval_id, scores in sorted(eval_results.items()):
             synth_runs = scores["synthesis"]
             route_runs = scores["routing"]
+            fetch_runs = scores["fetch"]
             grades_str = "".join(SYNTH_GRADE.get(s, "?") for s in synth_runs)
             synth_agg = aggregate_synthesis(synth_runs)
             route_agg = aggregate_routing(route_runs)
+            fetch_agg = aggregate_fetch(fetch_runs)
             synth_emoji = SYNTH_GRADE.get(synth_agg, "?")
             route_emoji = ROUTE_GRADE.get(route_agg, "?")
+            fetch_emoji = FETCH_GRADE.get(fetch_agg, "?")
             synth_totals[synth_agg] = synth_totals.get(synth_agg, 0) + 1
             route_totals[route_agg] = route_totals.get(route_agg, 0) + 1
-            print(f"  {grades_str}  →  {synth_emoji} {synth_agg:<7}  {route_emoji} {route_agg:<10}  {skill}/eval-{eval_id:02d}")
+            fetch_totals[fetch_agg] = fetch_totals.get(fetch_agg, 0) + 1
+            print(f"  {grades_str}  →  {synth_emoji} {synth_agg:<7}  {route_emoji} {route_agg:<10}  {fetch_emoji} {fetch_agg:<10}  {skill}/eval-{eval_id:02d}")
+
     total = sum(synth_totals.values())
-    print(f"\n  Synthesis ({total} evals): ✅ {synth_totals.get('PASS', 0)}  ⚠️ {synth_totals.get('PARTIAL', 0)}  ❌ {synth_totals.get('FAIL', 0)}")
-    routed = route_totals.get("ROUTED", 0)
-    partial = route_totals.get("PARTIAL", 0)
-    unrouted = route_totals.get("UNROUTED", 0)
-    na = route_totals.get("N/A", 0)
-    route_total = routed + partial + unrouted
-    na_note = f"  (+ {na} N/A)" if na else ""
-    print(f"  Routing   ({route_total} evals): 🔀 {routed} routed  ⚡ {partial} partial  🚫 {unrouted} unrouted{na_note}")
+    error_note = f"  💥 {synth_totals['ERROR']} errors" if synth_totals["ERROR"] else ""
+    print(f"\n  Synthesis ({total} evals): ✅ {synth_totals['PASS']}  ⚠️ {synth_totals['PARTIAL']}  ❌ {synth_totals['FAIL']}{error_note}")
+
+    route_n = route_totals["ROUTED"] + route_totals["PARTIAL"] + route_totals["UNROUTED"]
+    route_na = route_totals["N/A"]
+    route_na_note = f"  (+ {route_na} N/A)" if route_na else ""
+    print(f"  Citation  ({route_n} evals): 🔀 {route_totals['ROUTED']} routed  ⚡ {route_totals['PARTIAL']} partial  🚫 {route_totals['UNROUTED']} unrouted{route_na_note}")
+
+    fetch_n = fetch_totals["FETCHED"] + fetch_totals["PARTIAL"] + fetch_totals["UNFETCHED"]
+    fetch_na = fetch_totals["N/A"]
+    fetch_na_note = f"  (+ {fetch_na} N/A)" if fetch_na else ""
+    print(f"  Fetched   ({fetch_n} evals): 🌐 {fetch_totals['FETCHED']} fetched  ⚡ {fetch_totals['PARTIAL']} partial  💭 {fetch_totals['UNFETCHED']} unfetched{fetch_na_note}")
 
 
 def main():

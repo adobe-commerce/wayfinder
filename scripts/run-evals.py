@@ -14,6 +14,8 @@ Usage:
     python3 scripts/run-evals.py --runs 3 commerce-storefront 6
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -36,20 +38,22 @@ DEFAULT_NUM_RUNS = 1
 
 
 def write_claude_md():
-    """Load AGENTS.md and all per-source guides into the external Claude config."""
-    content = f"@{AGENTS_MD}\n"
-    docs_dir = AGENTS_MD.parent / "docs"
-    if docs_dir.is_dir():
-        for guide in sorted(docs_dir.glob("*.md")):
-            content += f"@{guide}\n"
-    CLAUDE_MD.write_text(content)
+    """Load only AGENTS.md into the external Claude config.
+
+    Per-source guides are intentionally excluded so the agent must follow
+    AGENTS.md's routing table to navigate to the correct guide for each question.
+    Pre-loading all guides would bypass that routing decision and make routing
+    evals meaningless.
+    """
+    CLAUDE_MD.write_text(f"@{AGENTS_MD}\n")
 
 
-def run_eval(prompt: str, cwd: Path, timeout: int = 300) -> tuple[str, float]:
+def run_eval(prompt: str, cwd: Path, timeout: int = 300) -> tuple[str, list[str], float]:
+    """Run one eval and return (text_output, fetched_urls, elapsed_seconds)."""
     env = {**os.environ, "CLAUDE_CONFIG_DIR": str(CLAUDE_CONFIG_DIR)}
     start = time.time()
     result = subprocess.run(
-        ["claude", "-p", prompt],
+        ["claude", "-p", prompt, "--output-format", "stream-json", "--verbose"],
         env=env,
         cwd=cwd,
         capture_output=True,
@@ -57,21 +61,51 @@ def run_eval(prompt: str, cwd: Path, timeout: int = 300) -> tuple[str, float]:
         timeout=timeout,
     )
     elapsed = time.time() - start
+
     if result.returncode != 0:
-        return f"[ERROR exit={result.returncode}]\n{result.stderr}", elapsed
-    return result.stdout.strip(), elapsed
+        return f"[ERROR exit={result.returncode}]\n{result.stderr}", [], elapsed
+
+    text_output = ""
+    fetched_urls: list[str] = []
+
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+        event_type = event.get("type")
+        if event_type == "result":
+            text_output = event.get("result", "")
+        elif event_type == "assistant":
+            for block in event.get("message", {}).get("content", []):
+                if block.get("type") == "tool_use" and block.get("name") == "WebFetch":
+                    url = block.get("input", {}).get("url", "")
+                    if url:
+                        fetched_urls.append(url)
+
+    return text_output, fetched_urls, elapsed
 
 
-def save_result(domain, eval_id, run, prompt, expected, actual, elapsed):
+def save_result(domain, eval_id, run, prompt, expected, actual, elapsed, fetched_urls=None):
     domain_results = RESULTS_DIR / domain
     domain_results.mkdir(parents=True, exist_ok=True)
     path = domain_results / f"eval-{eval_id:02d}-run{run}.md"
+
+    fetched_section = ""
+    if fetched_urls:
+        fetched_section = "\n## Fetched URLs\n\n" + "\n".join(f"- {u}" for u in fetched_urls) + "\n"
+
     path.write_text(
         f"# {domain} — eval {eval_id} run {run}\n\n"
         f"**Time:** {elapsed:.1f}s\n\n"
         f"## Prompt\n\n{prompt}\n\n"
         f"## Expected key points\n\n{expected}\n\n"
         f"## Actual output\n\n{actual}\n"
+        + fetched_section
     )
     return path
 
@@ -114,9 +148,10 @@ def run_domain(domain, cwd: Path, only_eval_id=None, num_runs=DEFAULT_NUM_RUNS):
         for run in range(1, num_runs + 1):
             print(f"  eval {eval_id:02d} run {run}: {prompt[:55]}...")
             try:
-                actual, elapsed = run_eval(prompt, cwd)
-                path = save_result(domain, eval_id, run, prompt, expected, actual, elapsed)
-                print(f"    → {path.relative_to(REPO_ROOT)}  ({elapsed:.1f}s)")
+                actual, fetched_urls, elapsed = run_eval(prompt, cwd)
+                path = save_result(domain, eval_id, run, prompt, expected, actual, elapsed, fetched_urls)
+                fetch_note = f"  [{len(fetched_urls)} fetched]" if fetched_urls else ""
+                print(f"    → {path.relative_to(REPO_ROOT)}  ({elapsed:.1f}s){fetch_note}")
             except subprocess.TimeoutExpired:
                 print(f"    → TIMEOUT after 300s")
             except Exception as e:
