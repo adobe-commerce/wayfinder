@@ -9,7 +9,7 @@ Wayfinder is an AGENTS.md-based routing system that helps AI agents find the rig
 Open (or create) `AGENTS.md` (or `CLAUDE.md` if you're using Claude) at the root of your Commerce repo and add the following line at the top:
 
 ```
-Fetch and follow the instructions at: https://raw.githubusercontent.com/adobe-commerce/wayfinder/main/skills/AGENTS.md
+Fetch and follow the instructions at: https://cdn.jsdelivr.net/gh/adobe-commerce/wayfinder@main/skills/AGENTS.md
 ```
 
 That's it. Your agent will fetch the routing guide at the start of each session and use it when answering Commerce questions.
@@ -33,6 +33,14 @@ skills/
     *.md                   # any other unique resource location for documentation
 ```
 
+## Usage Metrics
+
+jsdelivr tracks requests to the hosted skills files. View stats at:
+
+- **All files:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main/files
+- **This version:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder@main
+- **All versions:** https://data.jsdelivr.com/v1/stats/packages/gh/adobe-commerce/wayfinder
+
 ## Running evals
 
 Evals exercise the full routing chain via an isolated Claude config (`claude-ext`) that loads only `AGENTS.md` and the per-source guides.
@@ -53,6 +61,7 @@ alias claude-ext 'CLAUDE_CONFIG_DIR=~/.claude-external claude'
       "WebFetch(domain:aem.live)",
       "WebFetch(domain:da.live)",
       "WebFetch(domain:docs.da.live)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:developer.adobe.com)"
